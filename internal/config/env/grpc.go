@@ -5,7 +5,7 @@ import (
 	"net"
 	"os"
 
-	"github.com/polshe-v/microservices_auth/internal/config"
+	"github.com/polshe-v/microservices_chat_server/internal/config"
 )
 
 const (

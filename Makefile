@@ -47,7 +47,7 @@ endif
 # ##### #
 
 build-app:
-	GOOS=linux GOARCH=amd64 go build -o $(LOCAL_BIN)/${BINARY_NAME} cmd/user/main.go
+	GOOS=linux GOARCH=amd64 go build -o $(LOCAL_BIN)/${BINARY_NAME} cmd/chat/main.go
 
 docker-build: docker-build-app docker-build-migrator
 

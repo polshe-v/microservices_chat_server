@@ -4,18 +4,18 @@ volumes:
   postgres_volume:
 
 services:
-  # chat-server:
-  #   image: chat-server:${APP_IMAGE_TAG}
-  #   container_name: chat-server
-  #   env_file:
-  #     - ${ENV}.env
-  #   ports:
-  #     - "${GRPC_PORT}:${GRPC_PORT}"
-  #   depends_on:
-  #     db:
-  #       condition: service_healthy
-  #     migrator:
-  #       condition: service_completed_successfully
+  chat-server:
+    image: chat-server:${APP_IMAGE_TAG}
+    container_name: chat-server
+    env_file:
+      - ${ENV}.env
+    ports:
+      - "${GRPC_PORT}:${GRPC_PORT}"
+    depends_on:
+      db:
+        condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
   db:
     image: postgres:${POSTGRES_IMAGE_TAG}
     container_name: db
