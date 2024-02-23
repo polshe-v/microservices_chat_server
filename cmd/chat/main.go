@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"log"
 	"net"
@@ -42,13 +43,17 @@ func (s *server) Create(ctx context.Context, req *desc.CreateRequest) (*desc.Cre
 
 	query, args, err := builderInsert.ToSql()
 	if err != nil {
-		log.Fatalf("failed to build query: %v", err)
+		errMsg := errors.New("failed to build query")
+		log.Printf("%v: %v", errMsg, err)
+		return nil, errMsg
 	}
 
 	var id int64
 	err = s.pool.QueryRow(ctx, query, args...).Scan(&id)
 	if err != nil {
-		log.Fatalf("failed to create chat: %v", err)
+		errMsg := errors.New("failed to create chat")
+		log.Printf("%v: %v", errMsg, err)
+		return nil, errMsg
 	}
 
 	return &desc.CreateResponse{
@@ -65,10 +70,19 @@ func (s *server) Delete(ctx context.Context, req *desc.DeleteRequest) (*empty.Em
 
 	query, args, err := builderDelete.ToSql()
 	if err != nil {
-		log.Fatalf("failed to build query: %v", err)
+		errMsg := errors.New("failed to build query")
+		log.Printf("%v: %v", errMsg, err)
+		return nil, errMsg
 	}
 
-	s.pool.QueryRow(ctx, query, args...)
+	res, err := s.pool.Exec(ctx, query, args...)
+	if err != nil {
+		errMsg := errors.New("failed to delete chat")
+		log.Printf("%v: %v", errMsg, err)
+		return nil, errMsg
+	}
+	log.Printf("result: %v", res)
+
 	return &empty.Empty{}, nil
 }
 
@@ -86,28 +100,33 @@ func main() {
 	// Read config file.
 	err := config.Load(configPath)
 	if err != nil {
-		log.Fatalf("failed to load config: %v", err)
+		log.Printf("failed to load config: %v", err)
+		return
 	}
 
 	grpcConfig, err := env.NewGrpcConfig()
 	if err != nil {
-		log.Fatalf("failed to get grpc config: %v", err)
+		log.Printf("failed to get grpc config: %v", err)
+		return
 	}
 
 	// Open IP and port for server.
 	lis, err := net.Listen(grpcConfig.Transport(), grpcConfig.Address())
 	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+		log.Printf("failed to listen: %v", err)
+		return
 	}
 
 	pgConfig, err := env.NewPgConfig()
 	if err != nil {
-		log.Fatalf("failed to get pg config: %v", err)
+		log.Printf("failed to get pg config: %v", err)
+		return
 	}
 
 	pool, err := pgxpool.New(ctx, pgConfig.DSN())
 	if err != nil {
-		log.Fatalf("failed to connect to database: %v", err)
+		log.Printf("failed to connect to database: %v", err)
+		return
 	}
 	defer pool.Close()
 
@@ -123,6 +142,7 @@ func main() {
 	log.Printf("server listening at %v", lis.Addr())
 
 	if err = s.Serve(lis); err != nil {
-		log.Fatalf("failed to serve: %v", err)
+		log.Printf("failed to serve: %v", err)
+		return
 	}
 }
