@@ -24,10 +24,7 @@ func init() {
 	flag.StringVar(&configPath, "config", ".env", "Path to config file")
 }
 
-const (
-	bcryptCost = 12
-	delim      = "---"
-)
+const delim = "---"
 
 type server struct {
 	desc.UnimplementedChatV1Server
