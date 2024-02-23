@@ -12,17 +12,17 @@ services:
     ports:
       - "${GRPC_PORT}:${GRPC_PORT}"
     depends_on:
-      db:
+      db-chat:
         condition: service_healthy
-      migrator:
+      migrator-chat:
         condition: service_completed_successfully
-  db:
+  db-chat:
     image: postgres:${POSTGRES_IMAGE_TAG}
-    container_name: db
+    container_name: db-chat
     env_file:
       - ${ENV}.env
     ports:
-      - "${POSTGRES_PORT}:5432"
+      - "${POSTGRES_PORT_LOCAL}:5432"
     volumes:
       - postgres_volume:/var/lib/postgresql/data
     healthcheck:
@@ -30,12 +30,12 @@ services:
       interval: 1s
       timeout: 5s
       retries: 5
-  migrator:
-    image: migrator:${MIGRATOR_IMAGE_TAG}
-    container_name: migrator
+  migrator-chat:
+    image: migrator-chat:${MIGRATOR_IMAGE_TAG}
+    container_name: migrator-chat
     restart: on-failure
     environment:
-      DB_HOST: db
+      DB_HOST: db-chat
     depends_on:
-      db:
+      db-chat:
         condition: service_healthy
