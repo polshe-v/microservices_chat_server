@@ -8,8 +8,8 @@ import (
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/polshe-v/microservices_chat_server/internal/model"
 	"github.com/polshe-v/microservices_chat_server/internal/repository"
-	desc "github.com/polshe-v/microservices_chat_server/pkg/chat_v1"
 )
 
 const (
@@ -30,7 +30,7 @@ func NewRepository(db *pgxpool.Pool) repository.ChatRepository {
 	return &repo{db: db}
 }
 
-func (r *repo) Create(ctx context.Context, chat *desc.Chat) (int64, error) {
+func (r *repo) Create(ctx context.Context, chat *model.Chat) (int64, error) {
 	builderInsert := sq.Insert(tableName).
 		PlaceholderFormat(sq.Dollar).
 		Columns(usernamesColumn).

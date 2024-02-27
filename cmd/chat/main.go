@@ -14,8 +14,10 @@ import (
 
 	config "github.com/polshe-v/microservices_chat_server/internal/config"
 	env "github.com/polshe-v/microservices_chat_server/internal/config/env"
-	"github.com/polshe-v/microservices_chat_server/internal/repository"
-	"github.com/polshe-v/microservices_chat_server/internal/repository/chat"
+	"github.com/polshe-v/microservices_chat_server/internal/converter"
+	chatRepository "github.com/polshe-v/microservices_chat_server/internal/repository/chat"
+	"github.com/polshe-v/microservices_chat_server/internal/service"
+	chatService "github.com/polshe-v/microservices_chat_server/internal/service/chat"
 	desc "github.com/polshe-v/microservices_chat_server/pkg/chat_v1"
 )
 
@@ -29,14 +31,14 @@ const delim = "---"
 
 type server struct {
 	desc.UnimplementedChatV1Server
-	chatRepository repository.ChatRepository
+	chatService service.ChatService
 }
 
 func (s *server) Create(ctx context.Context, req *desc.CreateRequest) (*desc.CreateResponse, error) {
 	chat := req.GetChat()
 	log.Printf("\n%s\nUsernames: %v\n%s", delim, strings.Join(chat.GetUsernames(), ", "), delim)
 
-	id, err := s.chatRepository.Create(ctx, chat)
+	id, err := s.chatService.Create(ctx, converter.ToChatFromDesc(chat))
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +53,7 @@ func (s *server) Create(ctx context.Context, req *desc.CreateRequest) (*desc.Cre
 func (s *server) Delete(ctx context.Context, req *desc.DeleteRequest) (*empty.Empty, error) {
 	log.Printf("\n%s\nID: %d\n%s", delim, req.GetId(), delim)
 
-	err := s.chatRepository.Delete(ctx, req.GetId())
+	err := s.chatService.Delete(ctx, req.GetId())
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +102,8 @@ func main() {
 	defer pool.Close()
 
 	// Create repository layer.
-	chatRepo := chat.NewRepository(pool)
+	chatRepo := chatRepository.NewRepository(pool)
+	chatSrv := chatService.NewService(chatRepo)
 
 	// Create gRPC *Server which has no service registered and has not started to accept requests yet.
 	s := grpc.NewServer()
@@ -109,7 +112,7 @@ func main() {
 	reflection.Register(s)
 
 	// Register service with corresponded interface.
-	desc.RegisterChatV1Server(s, &server{chatRepository: chatRepo})
+	desc.RegisterChatV1Server(s, &server{chatService: chatSrv})
 
 	log.Printf("server listening at %v", lis.Addr())
 
