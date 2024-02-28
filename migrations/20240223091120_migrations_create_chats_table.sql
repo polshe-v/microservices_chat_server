@@ -1,8 +1,8 @@
 -- +goose Up
 -- +goose StatementBegin
 CREATE TABLE chats (
-	id serial primary key,
-	usernames text[] not null
+    id serial primary key,
+    usernames text[] not null
 );
 -- +goose StatementEnd
 
