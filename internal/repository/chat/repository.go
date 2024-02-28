@@ -58,7 +58,7 @@ func (r *repo) Create(ctx context.Context, chat *model.Chat) (int64, error) {
 	return id, nil
 }
 
-func (r *repo) Delete(ctx context.Context, id int64) error {
+func (r *repo) Delete(ctx context.Context, id int64) (int64, error) {
 	builderDelete := sq.Delete(tableName).
 		PlaceholderFormat(sq.Dollar).
 		Where(sq.Eq{idColumn: id})
@@ -66,7 +66,7 @@ func (r *repo) Delete(ctx context.Context, id int64) error {
 	query, args, err := builderDelete.ToSql()
 	if err != nil {
 		log.Printf("%v", err)
-		return errQueryBuild
+		return 0, errQueryBuild
 	}
 
 	q := db.Query{
@@ -77,8 +77,7 @@ func (r *repo) Delete(ctx context.Context, id int64) error {
 	res, err := r.db.DB().ExecContext(ctx, q, args...)
 	if err != nil {
 		log.Printf("%v", err)
-		return errors.New("failed to delete chat")
+		return 0, errors.New("failed to delete chat")
 	}
-	log.Printf("result: %v", res)
-	return nil
+	return res.RowsAffected(), nil
 }

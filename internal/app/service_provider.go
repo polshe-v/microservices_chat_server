@@ -7,11 +7,13 @@ import (
 	"github.com/polshe-v/microservices_chat_server/internal/api/chat"
 	"github.com/polshe-v/microservices_chat_server/internal/client/db"
 	"github.com/polshe-v/microservices_chat_server/internal/client/db/pg"
+	"github.com/polshe-v/microservices_chat_server/internal/client/db/transaction"
 	"github.com/polshe-v/microservices_chat_server/internal/closer"
 	"github.com/polshe-v/microservices_chat_server/internal/config"
 	"github.com/polshe-v/microservices_chat_server/internal/config/env"
 	"github.com/polshe-v/microservices_chat_server/internal/repository"
 	chatRepository "github.com/polshe-v/microservices_chat_server/internal/repository/chat"
+	logRepository "github.com/polshe-v/microservices_chat_server/internal/repository/log"
 	"github.com/polshe-v/microservices_chat_server/internal/service"
 	chatService "github.com/polshe-v/microservices_chat_server/internal/service/chat"
 )
@@ -20,9 +22,11 @@ type serviceProvider struct {
 	pgConfig   config.PgConfig
 	grpcConfig config.GrpcConfig
 
-	dbClient db.Client
+	dbClient  db.Client
+	txManager db.TxManager
 
 	chatRepository repository.ChatRepository
+	logRepository  repository.LogRepository
 	chatService    service.ChatService
 	chatImpl       *chat.Implementation
 }
@@ -77,6 +81,13 @@ func (s *serviceProvider) DBClient(ctx context.Context) db.Client {
 	return s.dbClient
 }
 
+func (s *serviceProvider) TxManager(ctx context.Context) db.TxManager {
+	if s.txManager == nil {
+		s.txManager = transaction.NewTransactionManager(s.DBClient(ctx).DB())
+	}
+	return s.txManager
+}
+
 func (s *serviceProvider) ChatRepository(ctx context.Context) repository.ChatRepository {
 	if s.chatRepository == nil {
 		s.chatRepository = chatRepository.NewRepository(s.DBClient(ctx))
@@ -84,9 +95,16 @@ func (s *serviceProvider) ChatRepository(ctx context.Context) repository.ChatRep
 	return s.chatRepository
 }
 
+func (s *serviceProvider) LogRepository(ctx context.Context) repository.LogRepository {
+	if s.logRepository == nil {
+		s.logRepository = logRepository.NewRepository(s.DBClient(ctx))
+	}
+	return s.logRepository
+}
+
 func (s *serviceProvider) ChatService(ctx context.Context) service.ChatService {
 	if s.chatService == nil {
-		s.chatService = chatService.NewService(s.ChatRepository(ctx))
+		s.chatService = chatService.NewService(s.ChatRepository(ctx), s.LogRepository(ctx), s.TxManager(ctx))
 	}
 	return s.chatService
 }
