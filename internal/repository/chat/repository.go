@@ -6,8 +6,8 @@ import (
 	"log"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/polshe-v/microservices_chat_server/internal/client/db"
 	"github.com/polshe-v/microservices_chat_server/internal/model"
 	"github.com/polshe-v/microservices_chat_server/internal/repository"
 )
@@ -22,11 +22,11 @@ const (
 var errQueryBuild = errors.New("failed to build query")
 
 type repo struct {
-	db *pgxpool.Pool
+	db db.Client
 }
 
 // NewRepository creates new object of repository layer.
-func NewRepository(db *pgxpool.Pool) repository.ChatRepository {
+func NewRepository(db db.Client) repository.ChatRepository {
 	return &repo{db: db}
 }
 
@@ -43,8 +43,13 @@ func (r *repo) Create(ctx context.Context, chat *model.Chat) (int64, error) {
 		return 0, errQueryBuild
 	}
 
+	q := db.Query{
+		Name:     "chat_repository.Create",
+		QueryRaw: query,
+	}
+
 	var id int64
-	err = r.db.QueryRow(ctx, query, args...).Scan(&id)
+	err = r.db.DB().QueryRowContext(ctx, q, args...).Scan(&id)
 	if err != nil {
 		log.Printf("%v", err)
 		return 0, errors.New("failed to create chat")
@@ -64,7 +69,12 @@ func (r *repo) Delete(ctx context.Context, id int64) error {
 		return errQueryBuild
 	}
 
-	res, err := r.db.Exec(ctx, query, args...)
+	q := db.Query{
+		Name:     "chat_repository.Delete",
+		QueryRaw: query,
+	}
+
+	res, err := r.db.DB().ExecContext(ctx, q, args...)
 	if err != nil {
 		log.Printf("%v", err)
 		return errors.New("failed to delete chat")
