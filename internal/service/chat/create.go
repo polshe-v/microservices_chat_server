@@ -2,7 +2,9 @@ package chat
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"log"
 
 	"github.com/polshe-v/microservices_chat_server/internal/model"
 )
@@ -28,7 +30,8 @@ func (s *serv) Create(ctx context.Context, chat *model.Chat) (int64, error) {
 	})
 
 	if err != nil {
-		return 0, err
+		log.Print(err)
+		return 0, errors.New("failed to create chat")
 	}
 
 	return id, nil

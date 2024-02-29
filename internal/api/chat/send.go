@@ -2,7 +2,6 @@ package chat
 
 import (
 	"context"
-	"log"
 
 	"github.com/golang/protobuf/ptypes/empty"
 
@@ -10,9 +9,6 @@ import (
 )
 
 // SendMessage is used for sending messages to connected chat.
-func (i *Implementation) SendMessage(_ context.Context, req *desc.SendMessageRequest) (*empty.Empty, error) {
-	message := req.GetMessage()
-	log.Printf("\n%s\nFrom: %s\nText: %s\nTimestamp: %v\n%s", delim, message.GetFrom(), message.GetText(), message.GetTimestamp(), delim)
-
+func (i *Implementation) SendMessage(_ context.Context, _ *desc.SendMessageRequest) (*empty.Empty, error) {
 	return &empty.Empty{}, nil
 }

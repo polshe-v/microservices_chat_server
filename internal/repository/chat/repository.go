@@ -2,8 +2,7 @@ package chat
 
 import (
 	"context"
-	"errors"
-	"log"
+	"fmt"
 
 	sq "github.com/Masterminds/squirrel"
 
@@ -19,8 +18,6 @@ const (
 	usernamesColumn = "usernames"
 )
 
-var errQueryBuild = errors.New("failed to build query")
-
 type repo struct {
 	db db.Client
 }
@@ -35,12 +32,11 @@ func (r *repo) Create(ctx context.Context, chat *model.Chat) (int64, error) {
 		PlaceholderFormat(sq.Dollar).
 		Columns(usernamesColumn).
 		Values(chat.Usernames).
-		Suffix("RETURNING id")
+		Suffix(fmt.Sprintf("RETURNING %s", idColumn))
 
 	query, args, err := builderInsert.ToSql()
 	if err != nil {
-		log.Printf("%v", err)
-		return 0, errQueryBuild
+		return 0, err
 	}
 
 	q := db.Query{
@@ -51,22 +47,20 @@ func (r *repo) Create(ctx context.Context, chat *model.Chat) (int64, error) {
 	var id int64
 	err = r.db.DB().QueryRowContext(ctx, q, args...).Scan(&id)
 	if err != nil {
-		log.Printf("%v", err)
-		return 0, errors.New("failed to create chat")
+		return 0, err
 	}
 
 	return id, nil
 }
 
-func (r *repo) Delete(ctx context.Context, id int64) (int64, error) {
+func (r *repo) Delete(ctx context.Context, id int64) error {
 	builderDelete := sq.Delete(tableName).
 		PlaceholderFormat(sq.Dollar).
 		Where(sq.Eq{idColumn: id})
 
 	query, args, err := builderDelete.ToSql()
 	if err != nil {
-		log.Printf("%v", err)
-		return 0, errQueryBuild
+		return err
 	}
 
 	q := db.Query{
@@ -74,10 +68,9 @@ func (r *repo) Delete(ctx context.Context, id int64) (int64, error) {
 		QueryRaw: query,
 	}
 
-	res, err := r.db.DB().ExecContext(ctx, q, args...)
+	_, err = r.db.DB().ExecContext(ctx, q, args...)
 	if err != nil {
-		log.Printf("%v", err)
-		return 0, errors.New("failed to delete chat")
+		return err
 	}
-	return res.RowsAffected(), nil
+	return nil
 }

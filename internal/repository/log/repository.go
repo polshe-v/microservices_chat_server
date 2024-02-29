@@ -3,7 +3,7 @@ package user
 import (
 	"context"
 	"errors"
-	"log"
+	"fmt"
 
 	sq "github.com/Masterminds/squirrel"
 
@@ -36,11 +36,10 @@ func (r *repo) Log(ctx context.Context, text *model.Log) error {
 		PlaceholderFormat(sq.Dollar).
 		Columns(logColumn).
 		Values(text.Log).
-		Suffix("RETURNING id")
+		Suffix(fmt.Sprintf("RETURNING %s", idColumn))
 
 	query, args, err := builderInsert.ToSql()
 	if err != nil {
-		log.Printf("%v", err)
 		return errQueryBuild
 	}
 
@@ -52,8 +51,7 @@ func (r *repo) Log(ctx context.Context, text *model.Log) error {
 	var id int64
 	err = r.db.DB().QueryRowContext(ctx, q, args...).Scan(&id)
 	if err != nil {
-		log.Printf("%v", err)
-		return errors.New("failed to create transaction log record")
+		return err
 	}
 
 	return nil

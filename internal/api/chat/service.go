@@ -5,8 +5,6 @@ import (
 	desc "github.com/polshe-v/microservices_chat_server/pkg/chat_v1"
 )
 
-const delim = "---"
-
 // Implementation structure describes API layer.
 type Implementation struct {
 	desc.UnimplementedChatV1Server
