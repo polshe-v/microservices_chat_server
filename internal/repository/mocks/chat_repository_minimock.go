@@ -2,8 +2,6 @@
 
 package mocks
 
-//go:generate minimock -i github.com/polshe-v/microservices_chat_server/internal/repository.ChatRepository -o chat_repository_minimock.go -n ChatRepositoryMock -p mocks
-
 import (
 	"context"
 	"sync"

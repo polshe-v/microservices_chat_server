@@ -55,7 +55,7 @@ func TestCreate(t *testing.T) {
 		chatServiceMock chatServiceMockFunc
 	}{
 		{
-			name: "service success case",
+			name: "success case",
 			args: args{
 				ctx: ctx,
 				req: req,

@@ -20,7 +20,7 @@ func (s *serv) Create(ctx context.Context, chat *model.Chat) (int64, error) {
 		}
 
 		errTx = s.logRepository.Log(ctx, &model.Log{
-			Log: fmt.Sprintf("Created chat with id: %d", id),
+			Text: fmt.Sprintf("Created chat with id: %d", id),
 		})
 		if errTx != nil {
 			return errTx
