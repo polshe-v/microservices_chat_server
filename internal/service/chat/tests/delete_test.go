@@ -19,6 +19,8 @@ import (
 )
 
 func TestDelete(t *testing.T) {
+	t.Parallel()
+
 	type chatRepositoryMockFunc func(mc *minimock.Controller) repository.ChatRepository
 	type logRepositoryMockFunc func(mc *minimock.Controller) repository.LogRepository
 	type transactorMockFunc func(mc *minimock.Controller) db.Transactor
@@ -36,10 +38,11 @@ func TestDelete(t *testing.T) {
 
 		repositoryErr = fmt.Errorf("failed to delete chat")
 
+		opts = pgx.TxOptions{IsoLevel: pgx.ReadCommitted}
+
 		reqLog = &model.Log{
 			Text: fmt.Sprintf("Deleted chat with id: %d", id),
 		}
-		opts = pgx.TxOptions{IsoLevel: pgx.ReadCommitted}
 	)
 
 	tests := []struct {
@@ -76,7 +79,7 @@ func TestDelete(t *testing.T) {
 			},
 		},
 		{
-			name: "repository error case",
+			name: "chat repository error case",
 			args: args{
 				ctx: ctx,
 				req: id,
@@ -99,11 +102,38 @@ func TestDelete(t *testing.T) {
 				return mock
 			},
 		},
+		{
+			name: "log repository error case",
+			args: args{
+				ctx: ctx,
+				req: id,
+			},
+			err: repositoryErr,
+			chatRepositoryMock: func(mc *minimock.Controller) repository.ChatRepository {
+				mock := repositoryMocks.NewChatRepositoryMock(mc)
+				mock.DeleteMock.Expect(minimock.AnyContext, id).Return(nil)
+				return mock
+			},
+			logRepositoryMock: func(mc *minimock.Controller) repository.LogRepository {
+				mock := repositoryMocks.NewLogRepositoryMock(mc)
+				mock.LogMock.Expect(minimock.AnyContext, reqLog).Return(repositoryErr)
+				return mock
+			},
+			transactorMock: func(mc *minimock.Controller) db.Transactor {
+				mock := dbMocks.NewTransactorMock(mc)
+				txMock := dbMocks.NewTxMock(mc)
+				mock.BeginTxMock.Expect(minimock.AnyContext, opts).Return(txMock, nil)
+				txMock.RollbackMock.Expect(minimock.AnyContext).Return(nil)
+				return mock
+			},
+		},
 	}
 
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			chatRepositoryMock := tt.chatRepositoryMock(mc)
 			logRepositoryMock := tt.logRepositoryMock(mc)
 			txManagerMock := transaction.NewTransactionManager(tt.transactorMock(mc))

@@ -2,12 +2,12 @@ package tests
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/gojuno/minimock/v3"
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	chatAPI "github.com/polshe-v/microservices_chat_server/internal/api/chat"
 	"github.com/polshe-v/microservices_chat_server/internal/service"
@@ -15,26 +15,30 @@ import (
 	desc "github.com/polshe-v/microservices_chat_server/pkg/chat_v1"
 )
 
-func TestDelete(t *testing.T) {
+func TestSend(t *testing.T) {
 	t.Parallel()
 
 	type chatServiceMockFunc func(mc *minimock.Controller) service.ChatService
 
 	type args struct {
 		ctx context.Context
-		req *desc.DeleteRequest
+		req *desc.SendMessageRequest
 	}
 
 	var (
 		ctx = context.Background()
 		mc  = minimock.NewController(t)
 
-		id = int64(1)
+		from      = "from"
+		text      = "text"
+		timestamp = timestamppb.Now()
 
-		serviceErr = fmt.Errorf("service error")
-
-		req = &desc.DeleteRequest{
-			Id: id,
+		req = &desc.SendMessageRequest{
+			Message: &desc.Message{
+				From:      from,
+				Text:      text,
+				Timestamp: timestamp,
+			},
 		}
 
 		res = &empty.Empty{}
@@ -57,21 +61,6 @@ func TestDelete(t *testing.T) {
 			err:  nil,
 			chatServiceMock: func(mc *minimock.Controller) service.ChatService {
 				mock := serviceMocks.NewChatServiceMock(mc)
-				mock.DeleteMock.Expect(ctx, id).Return(nil)
-				return mock
-			},
-		},
-		{
-			name: "service error case",
-			args: args{
-				ctx: ctx,
-				req: req,
-			},
-			want: nil,
-			err:  serviceErr,
-			chatServiceMock: func(mc *minimock.Controller) service.ChatService {
-				mock := serviceMocks.NewChatServiceMock(mc)
-				mock.DeleteMock.Expect(ctx, id).Return(serviceErr)
 				return mock
 			},
 		},
@@ -85,7 +74,7 @@ func TestDelete(t *testing.T) {
 			chatServiceMock := tt.chatServiceMock(mc)
 			api := chatAPI.NewImplementation(chatServiceMock)
 
-			res, err := api.Delete(tt.args.ctx, tt.args.req)
+			res, err := api.SendMessage(tt.args.ctx, tt.args.req)
 			require.Equal(t, tt.err, err)
 			require.Equal(t, tt.want, res)
 		})
