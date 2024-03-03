@@ -9,13 +9,13 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/require"
 
-	"github.com/polshe-v/microservices_chat_server/internal/client/db"
-	dbMocks "github.com/polshe-v/microservices_chat_server/internal/client/db/mocks"
-	"github.com/polshe-v/microservices_chat_server/internal/client/db/transaction"
 	"github.com/polshe-v/microservices_chat_server/internal/model"
 	"github.com/polshe-v/microservices_chat_server/internal/repository"
 	repositoryMocks "github.com/polshe-v/microservices_chat_server/internal/repository/mocks"
 	chatService "github.com/polshe-v/microservices_chat_server/internal/service/chat"
+	"github.com/polshe-v/microservices_common/pkg/db"
+	dbMocks "github.com/polshe-v/microservices_common/pkg/db/mocks"
+	"github.com/polshe-v/microservices_common/pkg/db/transaction"
 )
 
 func TestDelete(t *testing.T) {

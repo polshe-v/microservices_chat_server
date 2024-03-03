@@ -5,10 +5,6 @@ import (
 	"log"
 
 	"github.com/polshe-v/microservices_chat_server/internal/api/chat"
-	"github.com/polshe-v/microservices_chat_server/internal/client/db"
-	"github.com/polshe-v/microservices_chat_server/internal/client/db/pg"
-	"github.com/polshe-v/microservices_chat_server/internal/client/db/transaction"
-	"github.com/polshe-v/microservices_chat_server/internal/closer"
 	"github.com/polshe-v/microservices_chat_server/internal/config"
 	"github.com/polshe-v/microservices_chat_server/internal/config/env"
 	"github.com/polshe-v/microservices_chat_server/internal/repository"
@@ -16,6 +12,10 @@ import (
 	logRepository "github.com/polshe-v/microservices_chat_server/internal/repository/log"
 	"github.com/polshe-v/microservices_chat_server/internal/service"
 	chatService "github.com/polshe-v/microservices_chat_server/internal/service/chat"
+	"github.com/polshe-v/microservices_common/pkg/closer"
+	"github.com/polshe-v/microservices_common/pkg/db"
+	"github.com/polshe-v/microservices_common/pkg/db/pg"
+	"github.com/polshe-v/microservices_common/pkg/db/transaction"
 )
 
 type serviceProvider struct {
