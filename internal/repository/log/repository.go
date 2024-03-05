@@ -7,9 +7,9 @@ import (
 
 	sq "github.com/Masterminds/squirrel"
 
-	"github.com/polshe-v/microservices_chat_server/internal/client/db"
 	"github.com/polshe-v/microservices_chat_server/internal/model"
 	"github.com/polshe-v/microservices_chat_server/internal/repository"
+	"github.com/polshe-v/microservices_common/pkg/db"
 )
 
 const (
@@ -35,7 +35,7 @@ func (r *repo) Log(ctx context.Context, text *model.Log) error {
 	builderInsert := sq.Insert(tableName).
 		PlaceholderFormat(sq.Dollar).
 		Columns(logColumn).
-		Values(text.Log).
+		Values(text.Text).
 		Suffix(fmt.Sprintf("RETURNING %s", idColumn))
 
 	query, args, err := builderInsert.ToSql()

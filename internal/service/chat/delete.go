@@ -18,7 +18,7 @@ func (s *serv) Delete(ctx context.Context, id int64) error {
 		}
 
 		errTx = s.logRepository.Log(ctx, &model.Log{
-			Log: fmt.Sprintf("Deleted chat with id: %d", id),
+			Text: fmt.Sprintf("Deleted chat with id: %d", id),
 		})
 		if errTx != nil {
 			return errTx

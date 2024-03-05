@@ -1,9 +1,9 @@
 package chat
 
 import (
-	"github.com/polshe-v/microservices_chat_server/internal/client/db"
 	"github.com/polshe-v/microservices_chat_server/internal/repository"
 	"github.com/polshe-v/microservices_chat_server/internal/service"
+	"github.com/polshe-v/microservices_common/pkg/db"
 )
 
 type serv struct {
