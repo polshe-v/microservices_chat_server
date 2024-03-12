@@ -8,6 +8,9 @@ import (
 type GrpcConfig interface {
 	Address() string
 	Transport() string
+	CertPath() string
+	KeyPath() string
+	CaPath() string
 }
 
 // PgConfig provides PostgreSQL settings from config file.
