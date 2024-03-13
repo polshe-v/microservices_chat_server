@@ -9,21 +9,27 @@ import (
 )
 
 const (
-	grpcHostEnvName      = "GRPC_HOST"
-	grpcPortEnvName      = "GRPC_PORT"
-	grpcTransportEnvName = "GRPC_TRANSPORT"
-	grpcCertPathEnvName  = "GRPC_CERT_PATH"
-	grpcKeyPathEnvName   = "GRPC_KEY_PATH"
-	grpcCaPathEnvName    = "GRPC_CA_PATH"
+	grpcHostEnvName         = "GRPC_HOST"
+	grpcPortEnvName         = "GRPC_PORT"
+	grpcTransportEnvName    = "GRPC_TRANSPORT"
+	grpcCertPathEnvName     = "GRPC_CERT_PATH"
+	grpcKeyPathEnvName      = "GRPC_KEY_PATH"
+	grpcCaPathEnvName       = "GRPC_CA_PATH"
+	grpcAuthHostEnvName     = "AUTH_GRPC_HOST"
+	grpcAuthPortEnvName     = "AUTH_GRPC_PORT"
+	grpcAuthCertPathEnvName = "AUTH_GRPC_CERT_PATH"
 )
 
 type grpcConfig struct {
-	host      string
-	port      string
-	transport string
-	certPath  string
-	keyPath   string
-	caPath    string
+	host         string
+	port         string
+	transport    string
+	certPath     string
+	keyPath      string
+	caPath       string
+	authHost     string
+	authPort     string
+	authCertPath string
 }
 
 var _ config.GrpcConfig = (*grpcConfig)(nil)
@@ -60,13 +66,31 @@ func NewGrpcConfig() (config.GrpcConfig, error) {
 		return nil, errors.New("grpc CA certificate not found")
 	}
 
+	authHost := os.Getenv(grpcAuthHostEnvName)
+	if len(authHost) == 0 {
+		return nil, errors.New("grpc authentication service host not found")
+	}
+
+	authPort := os.Getenv(grpcAuthPortEnvName)
+	if len(authPort) == 0 {
+		return nil, errors.New("grpc authentication service port not found")
+	}
+
+	authCertPath := os.Getenv(grpcAuthCertPathEnvName)
+	if len(authCertPath) == 0 {
+		return nil, errors.New("grpc authentication service certificate not found")
+	}
+
 	return &grpcConfig{
-		host:      host,
-		port:      port,
-		transport: transport,
-		certPath:  certPath,
-		keyPath:   keyPath,
-		caPath:    caPath,
+		host:         host,
+		port:         port,
+		transport:    transport,
+		certPath:     certPath,
+		keyPath:      keyPath,
+		caPath:       caPath,
+		authHost:     authHost,
+		authPort:     authPort,
+		authCertPath: authCertPath,
 	}, nil
 }
 
@@ -88,4 +112,12 @@ func (cfg *grpcConfig) KeyPath() string {
 
 func (cfg *grpcConfig) CaPath() string {
 	return cfg.caPath
+}
+
+func (cfg *grpcConfig) AuthAddress() string {
+	return net.JoinHostPort(cfg.authHost, cfg.authPort)
+}
+
+func (cfg *grpcConfig) AuthCertPath() string {
+	return cfg.authCertPath
 }

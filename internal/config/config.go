@@ -11,6 +11,8 @@ type GrpcConfig interface {
 	CertPath() string
 	KeyPath() string
 	CaPath() string
+	AuthAddress() string
+	AuthCertPath() string
 }
 
 // PgConfig provides PostgreSQL settings from config file.
