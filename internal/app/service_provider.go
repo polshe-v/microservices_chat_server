@@ -4,9 +4,15 @@ import (
 	"context"
 	"log"
 
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
+
+	descAccess "github.com/polshe-v/microservices_auth/internal/pkg/access_v1"
 	"github.com/polshe-v/microservices_chat_server/internal/api/chat"
+	rpcAuth "github.com/polshe-v/microservices_chat_server/internal/client/rpc/auth"
 	"github.com/polshe-v/microservices_chat_server/internal/config"
 	"github.com/polshe-v/microservices_chat_server/internal/config/env"
+	"github.com/polshe-v/microservices_chat_server/internal/interceptor"
 	"github.com/polshe-v/microservices_chat_server/internal/repository"
 	chatRepository "github.com/polshe-v/microservices_chat_server/internal/repository/chat"
 	logRepository "github.com/polshe-v/microservices_chat_server/internal/repository/log"
@@ -23,8 +29,10 @@ type serviceProvider struct {
 	grpcConfig config.GrpcConfig
 	authConfig config.AuthConfig
 
-	dbClient  db.Client
-	txManager db.TxManager
+	authClient        *rpcAuth.Client
+	dbClient          db.Client
+	txManager         db.TxManager
+	interceptorClient *interceptor.Client
 
 	chatRepository repository.ChatRepository
 	logRepository  repository.LogRepository
@@ -73,6 +81,37 @@ func (s *serviceProvider) AuthConfig() config.AuthConfig {
 	}
 
 	return s.authConfig
+}
+
+func (s *serviceProvider) AuthClient() *rpcAuth.Client {
+	if s.authClient == nil {
+		cfg := s.AuthConfig()
+		creds, err := credentials.NewClientTLSFromFile(cfg.CertPath(), "")
+		if err != nil {
+			log.Fatalf("failed to get credentials of authentication service: %v", err)
+		}
+
+		conn, err := grpc.Dial(
+			cfg.Address(),
+			grpc.WithTransportCredentials(creds),
+		)
+		if err != nil {
+			log.Fatalf("failed to connect to authentication service: %v", err)
+		}
+
+		s.authClient = rpcAuth.NewAuthClient(descAccess.NewAccessV1Client(conn))
+	}
+
+	return s.authClient
+}
+
+func (s *serviceProvider) InterceptorClient() *interceptor.Client {
+	if s.interceptorClient == nil {
+		s.interceptorClient = &interceptor.Client{
+			client: s.AuthClient(),
+		}
+	}
+	return s.interceptorClient
 }
 
 func (s *serviceProvider) DBClient(ctx context.Context) db.Client {

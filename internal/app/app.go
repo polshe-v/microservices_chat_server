@@ -11,7 +11,6 @@ import (
 	"google.golang.org/grpc/reflection"
 
 	"github.com/polshe-v/microservices_chat_server/internal/config"
-	"github.com/polshe-v/microservices_chat_server/internal/interceptor"
 	desc "github.com/polshe-v/microservices_chat_server/pkg/chat_v1"
 	"github.com/polshe-v/microservices_common/pkg/closer"
 )
@@ -87,16 +86,11 @@ func (a *App) initGrpcServer(ctx context.Context) error {
 		return err
 	}
 
+	c := a.serviceProvider.InterceptorClient()
 	a.grpcServer = grpc.NewServer(
 		grpc.Creds(creds),
-		grpc.UnaryInterceptor(interceptor.PolicyInterceptor),
+		grpc.UnaryInterceptor(c.PolicyInterceptor),
 	)
-
-	cfgAuth := a.serviceProvider.AuthConfig()
-	interceptor.AuthService = &interceptor.AuthServiceParams{
-		AuthAddress:  cfgAuth.Address(),
-		AuthCertPath: cfgAuth.CertPath(),
-	}
 
 	// Upon the client's request, the server will automatically provide information on the supported methods.
 	reflection.Register(a.grpcServer)
