@@ -21,6 +21,7 @@ import (
 type serviceProvider struct {
 	pgConfig   config.PgConfig
 	grpcConfig config.GrpcConfig
+	authConfig config.AuthConfig
 
 	dbClient  db.Client
 	txManager db.TxManager
@@ -59,6 +60,19 @@ func (s *serviceProvider) GrpcConfig() config.GrpcConfig {
 	}
 
 	return s.grpcConfig
+}
+
+func (s *serviceProvider) AuthConfig() config.AuthConfig {
+	if s.authConfig == nil {
+		cfg, err := env.NewAuthConfig()
+		if err != nil {
+			log.Fatalf("failed to get authentication service config: %v", err)
+		}
+
+		s.authConfig = cfg
+	}
+
+	return s.authConfig
 }
 
 func (s *serviceProvider) DBClient(ctx context.Context) db.Client {

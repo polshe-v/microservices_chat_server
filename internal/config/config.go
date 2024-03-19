@@ -11,8 +11,12 @@ type GrpcConfig interface {
 	CertPath() string
 	KeyPath() string
 	CaPath() string
-	AuthAddress() string
-	AuthCertPath() string
+}
+
+// AuthConfig provides authentication service settings from config file.
+type AuthConfig interface {
+	Address() string
+	CertPath() string
 }
 
 // PgConfig provides PostgreSQL settings from config file.

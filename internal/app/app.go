@@ -81,8 +81,8 @@ func (a *App) initServiceProvider(_ context.Context) error {
 }
 
 func (a *App) initGrpcServer(ctx context.Context) error {
-	cfg := a.serviceProvider.GrpcConfig()
-	creds, err := credentials.NewServerTLSFromFile(cfg.CertPath(), cfg.KeyPath())
+	cfgGrpc := a.serviceProvider.GrpcConfig()
+	creds, err := credentials.NewServerTLSFromFile(cfgGrpc.CertPath(), cfgGrpc.KeyPath())
 	if err != nil {
 		return err
 	}
@@ -92,9 +92,10 @@ func (a *App) initGrpcServer(ctx context.Context) error {
 		grpc.UnaryInterceptor(interceptor.PolicyInterceptor),
 	)
 
+	cfgAuth := a.serviceProvider.AuthConfig()
 	interceptor.AuthService = &interceptor.AuthServiceParams{
-		AuthAddress:  cfg.AuthAddress(),
-		AuthCertPath: cfg.AuthCertPath(),
+		AuthAddress:  cfgAuth.Address(),
+		AuthCertPath: cfgAuth.CertPath(),
 	}
 
 	// Upon the client's request, the server will automatically provide information on the supported methods.
