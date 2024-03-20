@@ -108,7 +108,7 @@ func (s *serviceProvider) AuthClient() *rpcAuth.Client {
 func (s *serviceProvider) InterceptorClient() *interceptor.Client {
 	if s.interceptorClient == nil {
 		s.interceptorClient = &interceptor.Client{
-			client: s.AuthClient(),
+			Client: s.AuthClient(),
 		}
 	}
 	return s.interceptorClient

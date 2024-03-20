@@ -7,14 +7,15 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 
-	"github.com/polshe-v/microservices_auth/internal/client/rpc/auth"
-	desc "github.com/polshe-v/microservices_auth/internal/pkg/access_v1"
+	"github.com/polshe-v/microservices_chat_server/internal/client/rpc/auth"
 )
 
+// Client contains client connection with authentication service.
 type Client struct {
-	client *auth.Client
+	Client *auth.Client
 }
 
+// PolicyInterceptor is used for authorization.
 func (c *Client) PolicyInterceptor(ctx context.Context, req interface{}, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 	endpoint, ok := req.(string)
 	if !ok {
@@ -26,7 +27,7 @@ func (c *Client) PolicyInterceptor(ctx context.Context, req interface{}, _ *grpc
 		return nil, errors.New("metadata is not provided")
 	}
 
-	err := c.client.Check(metadata.NewOutgoingContext(ctx, md), endpoint)
+	err := c.Client.Check(metadata.NewOutgoingContext(ctx, md), endpoint)
 	if err != nil {
 		return nil, err
 	}
