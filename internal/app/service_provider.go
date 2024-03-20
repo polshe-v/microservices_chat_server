@@ -7,7 +7,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
-	descAccess "github.com/polshe-v/microservices_auth/internal/pkg/access_v1"
+	descAccess "github.com/polshe-v/microservices_auth/pkg/access_v1"
 	"github.com/polshe-v/microservices_chat_server/internal/api/chat"
 	rpc "github.com/polshe-v/microservices_chat_server/internal/client/rpc"
 	rpcAuth "github.com/polshe-v/microservices_chat_server/internal/client/rpc/auth"

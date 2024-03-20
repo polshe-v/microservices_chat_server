@@ -80,6 +80,9 @@ test-coverage:
 build-app:
 	GOOS=linux GOARCH=amd64 go build -o $(LOCAL_BIN)/${BINARY_NAME} cmd/chat/main.go
 
+docker-net:
+	docker network create -d bridge service-net
+
 docker-build: docker-build-app docker-build-migrator
 
 docker-build-app: check-env

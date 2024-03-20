@@ -9,6 +9,7 @@ require (
 	github.com/jackc/pgx/v5 v5.5.5
 	github.com/joho/godotenv v1.5.1
 	github.com/pkg/errors v0.9.1
+	github.com/polshe-v/microservices_auth v0.0.0-20240320165224-b0fa06196ebc
 	github.com/polshe-v/microservices_common v0.0.0-20240303133826-490a54193c86
 	github.com/stretchr/testify v1.8.4
 	google.golang.org/grpc v1.62.1

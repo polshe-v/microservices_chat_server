@@ -16,18 +16,13 @@ type Client struct {
 }
 
 // PolicyInterceptor is used for authorization.
-func (c *Client) PolicyInterceptor(ctx context.Context, req interface{}, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-	endpoint, ok := req.(string)
-	if !ok {
-		return nil, errors.New("invalid endpoint type")
-	}
-
+func (c *Client) PolicyInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
 		return nil, errors.New("metadata is not provided")
 	}
 
-	err := c.Client.Check(metadata.NewOutgoingContext(ctx, md), endpoint)
+	err := c.Client.Check(metadata.NewOutgoingContext(ctx, md), info.FullMethod)
 	if err != nil {
 		return nil, err
 	}

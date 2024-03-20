@@ -7,6 +7,11 @@ Chat Service includes 3 docker containers:
 
 ## Deploy
 
+Make sure docker network `service-net` is in place for microservices communication. If none exists, then create network:
+```
+# make docker-net
+```
+
 To deploy Chat Service:
 ```
 # make docker-deploy ENV=<environment>
