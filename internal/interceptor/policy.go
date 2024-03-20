@@ -7,12 +7,12 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 
-	"github.com/polshe-v/microservices_chat_server/internal/client/rpc/auth"
+	"github.com/polshe-v/microservices_chat_server/internal/client/rpc"
 )
 
 // Client contains client connection with authentication service.
 type Client struct {
-	Client *auth.Client
+	Client rpc.AuthClient
 }
 
 // PolicyInterceptor is used for authorization.

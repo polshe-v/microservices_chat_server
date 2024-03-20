@@ -9,6 +9,7 @@ import (
 
 	descAccess "github.com/polshe-v/microservices_auth/internal/pkg/access_v1"
 	"github.com/polshe-v/microservices_chat_server/internal/api/chat"
+	rpc "github.com/polshe-v/microservices_chat_server/internal/client/rpc"
 	rpcAuth "github.com/polshe-v/microservices_chat_server/internal/client/rpc/auth"
 	"github.com/polshe-v/microservices_chat_server/internal/config"
 	"github.com/polshe-v/microservices_chat_server/internal/config/env"
@@ -29,7 +30,7 @@ type serviceProvider struct {
 	grpcConfig config.GrpcConfig
 	authConfig config.AuthConfig
 
-	authClient        *rpcAuth.Client
+	authClient        rpc.AuthClient
 	dbClient          db.Client
 	txManager         db.TxManager
 	interceptorClient *interceptor.Client
@@ -83,7 +84,7 @@ func (s *serviceProvider) AuthConfig() config.AuthConfig {
 	return s.authConfig
 }
 
-func (s *serviceProvider) AuthClient() *rpcAuth.Client {
+func (s *serviceProvider) AuthClient() rpc.AuthClient {
 	if s.authClient == nil {
 		cfg := s.AuthConfig()
 		creds, err := credentials.NewClientTLSFromFile(cfg.CertPath(), "")
