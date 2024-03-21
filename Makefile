@@ -7,6 +7,7 @@ BINARY_NAME=main
 CONFIG=$(ENV).env
 LOCAL_MIGRATION_DIR=$(MIGRATION_DIR)
 LOCAL_MIGRATION_DSN="host=localhost port=$(POSTGRES_PORT_LOCAL) dbname=$(POSTGRES_DB) user=$(POSTGRES_USER) password=$(POSTGRES_PASSWORD) sslmode=disable"
+TLS_PATH=tls
 TESTS_PATH=github.com/polshe-v/microservices_chat_server/internal/service/...,github.com/polshe-v/microservices_chat_server/internal/api/...
 TESTS_ATTEMPTS=5
 TESTS_COVERAGE_FILE=coverage.out
@@ -41,9 +42,24 @@ generate-api-v1:
 	--plugin=protoc-gen-go-grpc=bin/protoc-gen-go-grpc \
 	api/chat_v1/chat.proto
 
+generate-cert: $(TLS_PATH)/ca.key $(TLS_PATH)/ca.pem
+	openssl genrsa -out $(TLS_PATH)/chat.key 4096
+	openssl req -new -key $(TLS_PATH)/chat.key -config openssl.cnf -out $(TLS_PATH)/chat.csr
+	openssl x509 -req -in $(TLS_PATH)/chat.csr -CA $(TLS_PATH)/ca.pem -CAkey $(TLS_PATH)/ca.key -extfile openssl.cnf -extensions req_ext -out $(TLS_PATH)/chat.pem -days 365 -sha256
+	rm -rf $(TLS_PATH)/chat.csr
+
 generate-mocks:
 	go generate ./internal/repository
 	go generate ./internal/service
+
+check-env:
+ifeq ($(ENV),)
+	$(error No environment specified)
+endif
+
+# ##### #
+# TESTS #
+# ##### #
 
 test:
 	go clean -testcache
@@ -57,17 +73,15 @@ test-coverage:
 	go tool cover -html=$(TESTS_COVERAGE_FILE) -o coverage.html
 	go tool cover -func=$(TESTS_COVERAGE_FILE) | grep "total"
 
-check-env:
-ifeq ($(ENV),)
-	$(error No environment specified)
-endif
-
 # ##### #
 # BUILD #
 # ##### #
 
 build-app:
 	GOOS=linux GOARCH=amd64 go build -o $(LOCAL_BIN)/${BINARY_NAME} cmd/chat/main.go
+
+docker-net:
+	docker network create -d bridge service-net
 
 docker-build: docker-build-app docker-build-migrator
 

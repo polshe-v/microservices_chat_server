@@ -4,9 +4,16 @@ import (
 	"context"
 	"log"
 
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
+
+	descAccess "github.com/polshe-v/microservices_auth/pkg/access_v1"
 	"github.com/polshe-v/microservices_chat_server/internal/api/chat"
+	rpc "github.com/polshe-v/microservices_chat_server/internal/client/rpc"
+	rpcAuth "github.com/polshe-v/microservices_chat_server/internal/client/rpc/auth"
 	"github.com/polshe-v/microservices_chat_server/internal/config"
 	"github.com/polshe-v/microservices_chat_server/internal/config/env"
+	"github.com/polshe-v/microservices_chat_server/internal/interceptor"
 	"github.com/polshe-v/microservices_chat_server/internal/repository"
 	chatRepository "github.com/polshe-v/microservices_chat_server/internal/repository/chat"
 	logRepository "github.com/polshe-v/microservices_chat_server/internal/repository/log"
@@ -21,9 +28,12 @@ import (
 type serviceProvider struct {
 	pgConfig   config.PgConfig
 	grpcConfig config.GrpcConfig
+	authConfig config.AuthConfig
 
-	dbClient  db.Client
-	txManager db.TxManager
+	authClient        rpc.AuthClient
+	dbClient          db.Client
+	txManager         db.TxManager
+	interceptorClient *interceptor.Client
 
 	chatRepository repository.ChatRepository
 	logRepository  repository.LogRepository
@@ -59,6 +69,50 @@ func (s *serviceProvider) GrpcConfig() config.GrpcConfig {
 	}
 
 	return s.grpcConfig
+}
+
+func (s *serviceProvider) AuthConfig() config.AuthConfig {
+	if s.authConfig == nil {
+		cfg, err := env.NewAuthConfig()
+		if err != nil {
+			log.Fatalf("failed to get authentication service config: %v", err)
+		}
+
+		s.authConfig = cfg
+	}
+
+	return s.authConfig
+}
+
+func (s *serviceProvider) AuthClient() rpc.AuthClient {
+	if s.authClient == nil {
+		cfg := s.AuthConfig()
+		creds, err := credentials.NewClientTLSFromFile(cfg.CertPath(), "")
+		if err != nil {
+			log.Fatalf("failed to get credentials of authentication service: %v", err)
+		}
+
+		conn, err := grpc.Dial(
+			cfg.Address(),
+			grpc.WithTransportCredentials(creds),
+		)
+		if err != nil {
+			log.Fatalf("failed to connect to authentication service: %v", err)
+		}
+
+		s.authClient = rpcAuth.NewAuthClient(descAccess.NewAccessV1Client(conn))
+	}
+
+	return s.authClient
+}
+
+func (s *serviceProvider) InterceptorClient() *interceptor.Client {
+	if s.interceptorClient == nil {
+		s.interceptorClient = &interceptor.Client{
+			Client: s.AuthClient(),
+		}
+	}
+	return s.interceptorClient
 }
 
 func (s *serviceProvider) DBClient(ctx context.Context) db.Client {

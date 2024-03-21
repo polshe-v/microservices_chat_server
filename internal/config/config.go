@@ -8,6 +8,15 @@ import (
 type GrpcConfig interface {
 	Address() string
 	Transport() string
+	CertPath() string
+	KeyPath() string
+	CaPath() string
+}
+
+// AuthConfig provides authentication service settings from config file.
+type AuthConfig interface {
+	Address() string
+	CertPath() string
 }
 
 // PgConfig provides PostgreSQL settings from config file.

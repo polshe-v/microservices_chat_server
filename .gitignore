@@ -25,3 +25,6 @@ go.work
 
 # Tests coverage
 coverage.*
+
+# Certificates and private keys
+/tls/

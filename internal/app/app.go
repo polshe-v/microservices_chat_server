@@ -7,6 +7,7 @@ import (
 	"net"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/reflection"
 
 	"github.com/polshe-v/microservices_chat_server/internal/config"
@@ -79,7 +80,17 @@ func (a *App) initServiceProvider(_ context.Context) error {
 }
 
 func (a *App) initGrpcServer(ctx context.Context) error {
-	a.grpcServer = grpc.NewServer()
+	cfgGrpc := a.serviceProvider.GrpcConfig()
+	creds, err := credentials.NewServerTLSFromFile(cfgGrpc.CertPath(), cfgGrpc.KeyPath())
+	if err != nil {
+		return err
+	}
+
+	c := a.serviceProvider.InterceptorClient()
+	a.grpcServer = grpc.NewServer(
+		grpc.Creds(creds),
+		grpc.UnaryInterceptor(c.PolicyInterceptor),
+	)
 
 	// Upon the client's request, the server will automatically provide information on the supported methods.
 	reflection.Register(a.grpcServer)
