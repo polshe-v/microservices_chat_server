@@ -19,7 +19,6 @@ import (
 	"google.golang.org/grpc/reflection"
 
 	"github.com/polshe-v/microservices_chat_server/internal/config"
-	"github.com/polshe-v/microservices_chat_server/internal/tracing"
 	desc "github.com/polshe-v/microservices_chat_server/pkg/chat_v1"
 	"github.com/polshe-v/microservices_common/pkg/closer"
 )
@@ -155,11 +154,6 @@ func (a *App) initTracing(ctx context.Context) error {
 	closer.Add(func() error {
 		return tracerProvider.Shutdown(ctx)
 	})
-
-	err = tracing.InitGlobalTracer(cfg.ServiceName())
-	if err != nil {
-		return err
-	}
 
 	return nil
 }
