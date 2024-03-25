@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
@@ -26,9 +27,10 @@ import (
 )
 
 type serviceProvider struct {
-	pgConfig   config.PgConfig
-	grpcConfig config.GrpcConfig
-	authConfig config.AuthConfig
+	pgConfig      config.PgConfig
+	grpcConfig    config.GrpcConfig
+	authConfig    config.AuthConfig
+	tracingConfig config.TracingConfig
 
 	authClient        rpc.AuthClient
 	dbClient          db.Client
@@ -84,6 +86,19 @@ func (s *serviceProvider) AuthConfig() config.AuthConfig {
 	return s.authConfig
 }
 
+func (s *serviceProvider) TracingConfig() config.TracingConfig {
+	if s.tracingConfig == nil {
+		cfg, err := env.NewTracingConfig()
+		if err != nil {
+			log.Fatalf("failed to get tracing config: %v", err)
+		}
+
+		s.tracingConfig = cfg
+	}
+
+	return s.tracingConfig
+}
+
 func (s *serviceProvider) AuthClient() rpc.AuthClient {
 	if s.authClient == nil {
 		cfg := s.AuthConfig()
@@ -95,6 +110,7 @@ func (s *serviceProvider) AuthClient() rpc.AuthClient {
 		conn, err := grpc.Dial(
 			cfg.Address(),
 			grpc.WithTransportCredentials(creds),
+			grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
 		)
 		if err != nil {
 			log.Fatalf("failed to connect to authentication service: %v", err)
