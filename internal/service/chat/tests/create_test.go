@@ -34,7 +34,7 @@ func TestCreate(t *testing.T) {
 		ctx = context.Background()
 		mc  = minimock.NewController(t)
 
-		id        = int64(1)
+		id        = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 		chatnames = []string{"name1", "name2", "name3"}
 
 		repositoryErr = fmt.Errorf("failed to create chat")
@@ -46,14 +46,14 @@ func TestCreate(t *testing.T) {
 		}
 
 		reqLog = &model.Log{
-			Text: fmt.Sprintf("Created chat with id: %d", id),
+			Text: fmt.Sprintf("Created chat with id: %v", id),
 		}
 	)
 
 	tests := []struct {
 		name               string
 		args               args
-		want               int64
+		want               string
 		err                error
 		chatRepositoryMock chatRepositoryMockFunc
 		logRepositoryMock  logRepositoryMockFunc
@@ -91,11 +91,11 @@ func TestCreate(t *testing.T) {
 				ctx: ctx,
 				req: req,
 			},
-			want: 0,
+			want: "",
 			err:  repositoryErr,
 			chatRepositoryMock: func(mc *minimock.Controller) repository.ChatRepository {
 				mock := repositoryMocks.NewChatRepositoryMock(mc)
-				mock.CreateMock.Expect(minimock.AnyContext, req).Return(0, repositoryErr)
+				mock.CreateMock.Expect(minimock.AnyContext, req).Return("", repositoryErr)
 				return mock
 			},
 			logRepositoryMock: func(mc *minimock.Controller) repository.LogRepository {
@@ -116,7 +116,7 @@ func TestCreate(t *testing.T) {
 				ctx: ctx,
 				req: req,
 			},
-			want: 0,
+			want: "",
 			err:  repositoryErr,
 			chatRepositoryMock: func(mc *minimock.Controller) repository.ChatRepository {
 				mock := repositoryMocks.NewChatRepositoryMock(mc)

@@ -9,7 +9,7 @@ import (
 	"github.com/polshe-v/microservices_chat_server/internal/model"
 )
 
-func (s *serv) Delete(ctx context.Context, id int64) error {
+func (s *serv) Delete(ctx context.Context, id string) error {
 	err := s.txManager.ReadCommitted(ctx, func(ctx context.Context) error {
 		var errTx error
 		errTx = s.chatRepository.Delete(ctx, id)
@@ -18,7 +18,7 @@ func (s *serv) Delete(ctx context.Context, id int64) error {
 		}
 
 		errTx = s.logRepository.Log(ctx, &model.Log{
-			Text: fmt.Sprintf("Deleted chat with id: %d", id),
+			Text: fmt.Sprintf("Deleted chat with id: %v", id),
 		})
 		if errTx != nil {
 			return errTx

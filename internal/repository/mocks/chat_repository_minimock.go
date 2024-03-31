@@ -17,14 +17,14 @@ type ChatRepositoryMock struct {
 	t          minimock.Tester
 	finishOnce sync.Once
 
-	funcCreate          func(ctx context.Context, chat *model.Chat) (i1 int64, err error)
+	funcCreate          func(ctx context.Context, chat *model.Chat) (s1 string, err error)
 	inspectFuncCreate   func(ctx context.Context, chat *model.Chat)
 	afterCreateCounter  uint64
 	beforeCreateCounter uint64
 	CreateMock          mChatRepositoryMockCreate
 
-	funcDelete          func(ctx context.Context, id int64) (err error)
-	inspectFuncDelete   func(ctx context.Context, id int64)
+	funcDelete          func(ctx context.Context, id string) (err error)
+	inspectFuncDelete   func(ctx context.Context, id string)
 	afterDeleteCounter  uint64
 	beforeDeleteCounter uint64
 	DeleteMock          mChatRepositoryMockDelete
@@ -74,7 +74,7 @@ type ChatRepositoryMockCreateParams struct {
 
 // ChatRepositoryMockCreateResults contains results of the ChatRepository.Create
 type ChatRepositoryMockCreateResults struct {
-	i1  int64
+	s1  string
 	err error
 }
 
@@ -110,7 +110,7 @@ func (mmCreate *mChatRepositoryMockCreate) Inspect(f func(ctx context.Context, c
 }
 
 // Return sets up results that will be returned by ChatRepository.Create
-func (mmCreate *mChatRepositoryMockCreate) Return(i1 int64, err error) *ChatRepositoryMock {
+func (mmCreate *mChatRepositoryMockCreate) Return(s1 string, err error) *ChatRepositoryMock {
 	if mmCreate.mock.funcCreate != nil {
 		mmCreate.mock.t.Fatalf("ChatRepositoryMock.Create mock is already set by Set")
 	}
@@ -118,12 +118,12 @@ func (mmCreate *mChatRepositoryMockCreate) Return(i1 int64, err error) *ChatRepo
 	if mmCreate.defaultExpectation == nil {
 		mmCreate.defaultExpectation = &ChatRepositoryMockCreateExpectation{mock: mmCreate.mock}
 	}
-	mmCreate.defaultExpectation.results = &ChatRepositoryMockCreateResults{i1, err}
+	mmCreate.defaultExpectation.results = &ChatRepositoryMockCreateResults{s1, err}
 	return mmCreate.mock
 }
 
 // Set uses given function f to mock the ChatRepository.Create method
-func (mmCreate *mChatRepositoryMockCreate) Set(f func(ctx context.Context, chat *model.Chat) (i1 int64, err error)) *ChatRepositoryMock {
+func (mmCreate *mChatRepositoryMockCreate) Set(f func(ctx context.Context, chat *model.Chat) (s1 string, err error)) *ChatRepositoryMock {
 	if mmCreate.defaultExpectation != nil {
 		mmCreate.mock.t.Fatalf("Default expectation is already set for the ChatRepository.Create method")
 	}
@@ -152,13 +152,13 @@ func (mmCreate *mChatRepositoryMockCreate) When(ctx context.Context, chat *model
 }
 
 // Then sets up ChatRepository.Create return parameters for the expectation previously defined by the When method
-func (e *ChatRepositoryMockCreateExpectation) Then(i1 int64, err error) *ChatRepositoryMock {
-	e.results = &ChatRepositoryMockCreateResults{i1, err}
+func (e *ChatRepositoryMockCreateExpectation) Then(s1 string, err error) *ChatRepositoryMock {
+	e.results = &ChatRepositoryMockCreateResults{s1, err}
 	return e.mock
 }
 
 // Create implements repository.ChatRepository
-func (mmCreate *ChatRepositoryMock) Create(ctx context.Context, chat *model.Chat) (i1 int64, err error) {
+func (mmCreate *ChatRepositoryMock) Create(ctx context.Context, chat *model.Chat) (s1 string, err error) {
 	mm_atomic.AddUint64(&mmCreate.beforeCreateCounter, 1)
 	defer mm_atomic.AddUint64(&mmCreate.afterCreateCounter, 1)
 
@@ -176,7 +176,7 @@ func (mmCreate *ChatRepositoryMock) Create(ctx context.Context, chat *model.Chat
 	for _, e := range mmCreate.CreateMock.expectations {
 		if minimock.Equal(*e.params, mm_params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
-			return e.results.i1, e.results.err
+			return e.results.s1, e.results.err
 		}
 	}
 
@@ -192,7 +192,7 @@ func (mmCreate *ChatRepositoryMock) Create(ctx context.Context, chat *model.Chat
 		if mm_results == nil {
 			mmCreate.t.Fatal("No results are set for the ChatRepositoryMock.Create")
 		}
-		return (*mm_results).i1, (*mm_results).err
+		return (*mm_results).s1, (*mm_results).err
 	}
 	if mmCreate.funcCreate != nil {
 		return mmCreate.funcCreate(ctx, chat)
@@ -286,7 +286,7 @@ type ChatRepositoryMockDeleteExpectation struct {
 // ChatRepositoryMockDeleteParams contains parameters of the ChatRepository.Delete
 type ChatRepositoryMockDeleteParams struct {
 	ctx context.Context
-	id  int64
+	id  string
 }
 
 // ChatRepositoryMockDeleteResults contains results of the ChatRepository.Delete
@@ -295,7 +295,7 @@ type ChatRepositoryMockDeleteResults struct {
 }
 
 // Expect sets up expected params for ChatRepository.Delete
-func (mmDelete *mChatRepositoryMockDelete) Expect(ctx context.Context, id int64) *mChatRepositoryMockDelete {
+func (mmDelete *mChatRepositoryMockDelete) Expect(ctx context.Context, id string) *mChatRepositoryMockDelete {
 	if mmDelete.mock.funcDelete != nil {
 		mmDelete.mock.t.Fatalf("ChatRepositoryMock.Delete mock is already set by Set")
 	}
@@ -315,7 +315,7 @@ func (mmDelete *mChatRepositoryMockDelete) Expect(ctx context.Context, id int64)
 }
 
 // Inspect accepts an inspector function that has same arguments as the ChatRepository.Delete
-func (mmDelete *mChatRepositoryMockDelete) Inspect(f func(ctx context.Context, id int64)) *mChatRepositoryMockDelete {
+func (mmDelete *mChatRepositoryMockDelete) Inspect(f func(ctx context.Context, id string)) *mChatRepositoryMockDelete {
 	if mmDelete.mock.inspectFuncDelete != nil {
 		mmDelete.mock.t.Fatalf("Inspect function is already set for ChatRepositoryMock.Delete")
 	}
@@ -339,7 +339,7 @@ func (mmDelete *mChatRepositoryMockDelete) Return(err error) *ChatRepositoryMock
 }
 
 // Set uses given function f to mock the ChatRepository.Delete method
-func (mmDelete *mChatRepositoryMockDelete) Set(f func(ctx context.Context, id int64) (err error)) *ChatRepositoryMock {
+func (mmDelete *mChatRepositoryMockDelete) Set(f func(ctx context.Context, id string) (err error)) *ChatRepositoryMock {
 	if mmDelete.defaultExpectation != nil {
 		mmDelete.mock.t.Fatalf("Default expectation is already set for the ChatRepository.Delete method")
 	}
@@ -354,7 +354,7 @@ func (mmDelete *mChatRepositoryMockDelete) Set(f func(ctx context.Context, id in
 
 // When sets expectation for the ChatRepository.Delete which will trigger the result defined by the following
 // Then helper
-func (mmDelete *mChatRepositoryMockDelete) When(ctx context.Context, id int64) *ChatRepositoryMockDeleteExpectation {
+func (mmDelete *mChatRepositoryMockDelete) When(ctx context.Context, id string) *ChatRepositoryMockDeleteExpectation {
 	if mmDelete.mock.funcDelete != nil {
 		mmDelete.mock.t.Fatalf("ChatRepositoryMock.Delete mock is already set by Set")
 	}
@@ -374,7 +374,7 @@ func (e *ChatRepositoryMockDeleteExpectation) Then(err error) *ChatRepositoryMoc
 }
 
 // Delete implements repository.ChatRepository
-func (mmDelete *ChatRepositoryMock) Delete(ctx context.Context, id int64) (err error) {
+func (mmDelete *ChatRepositoryMock) Delete(ctx context.Context, id string) (err error) {
 	mm_atomic.AddUint64(&mmDelete.beforeDeleteCounter, 1)
 	defer mm_atomic.AddUint64(&mmDelete.afterDeleteCounter, 1)
 

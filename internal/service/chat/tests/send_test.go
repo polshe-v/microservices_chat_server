@@ -1,6 +1,6 @@
 package tests
 
-import (
+/*import (
 	"context"
 	"fmt"
 	"testing"
@@ -18,7 +18,8 @@ import (
 	"github.com/polshe-v/microservices_common/pkg/db/transaction"
 )
 
-func TestDelete(t *testing.T) {
+// TODO
+func TestSend(t *testing.T) {
 	t.Parallel()
 
 	type chatRepositoryMockFunc func(mc *minimock.Controller) repository.ChatRepository
@@ -27,27 +28,33 @@ func TestDelete(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		req string
+		req *model.Chat
 	}
 
 	var (
 		ctx = context.Background()
 		mc  = minimock.NewController(t)
 
-		id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+		id        = int64(1)
+		chatnames = []string{"name1", "name2", "name3"}
 
-		repositoryErr = fmt.Errorf("failed to delete chat")
+		repositoryErr = fmt.Errorf("failed to create chat")
 
 		opts = pgx.TxOptions{IsoLevel: pgx.ReadCommitted}
 
+		req = &model.Chat{
+			Usernames: chatnames,
+		}
+
 		reqLog = &model.Log{
-			Text: fmt.Sprintf("Deleted chat with id: %v", id),
+			Text: fmt.Sprintf("Created chat with id: %d", id),
 		}
 	)
 
 	tests := []struct {
 		name               string
 		args               args
+		want               int64
 		err                error
 		chatRepositoryMock chatRepositoryMockFunc
 		logRepositoryMock  logRepositoryMockFunc
@@ -57,12 +64,13 @@ func TestDelete(t *testing.T) {
 			name: "success case",
 			args: args{
 				ctx: ctx,
-				req: id,
+				req: req,
 			},
-			err: nil,
+			want: id,
+			err:  nil,
 			chatRepositoryMock: func(mc *minimock.Controller) repository.ChatRepository {
 				mock := repositoryMocks.NewChatRepositoryMock(mc)
-				mock.DeleteMock.Expect(minimock.AnyContext, id).Return(nil)
+				mock.CreateMock.Expect(minimock.AnyContext, req).Return(id, nil)
 				return mock
 			},
 			logRepositoryMock: func(mc *minimock.Controller) repository.LogRepository {
@@ -82,12 +90,13 @@ func TestDelete(t *testing.T) {
 			name: "chat repository error case",
 			args: args{
 				ctx: ctx,
-				req: id,
+				req: req,
 			},
-			err: repositoryErr,
+			want: 0,
+			err:  repositoryErr,
 			chatRepositoryMock: func(mc *minimock.Controller) repository.ChatRepository {
 				mock := repositoryMocks.NewChatRepositoryMock(mc)
-				mock.DeleteMock.Expect(minimock.AnyContext, id).Return(repositoryErr)
+				mock.CreateMock.Expect(minimock.AnyContext, req).Return(0, repositoryErr)
 				return mock
 			},
 			logRepositoryMock: func(mc *minimock.Controller) repository.LogRepository {
@@ -106,12 +115,13 @@ func TestDelete(t *testing.T) {
 			name: "log repository error case",
 			args: args{
 				ctx: ctx,
-				req: id,
+				req: req,
 			},
-			err: repositoryErr,
+			want: 0,
+			err:  repositoryErr,
 			chatRepositoryMock: func(mc *minimock.Controller) repository.ChatRepository {
 				mock := repositoryMocks.NewChatRepositoryMock(mc)
-				mock.DeleteMock.Expect(minimock.AnyContext, id).Return(nil)
+				mock.CreateMock.Expect(minimock.AnyContext, req).Return(id, nil)
 				return mock
 			},
 			logRepositoryMock: func(mc *minimock.Controller) repository.LogRepository {
@@ -139,8 +149,10 @@ func TestDelete(t *testing.T) {
 			txManagerMock := transaction.NewTransactionManager(tt.transactorMock(mc))
 			srv := chatService.NewService(chatRepositoryMock, logRepositoryMock, txManagerMock)
 
-			err := srv.Delete(tt.args.ctx, tt.args.req)
+			res, err := srv.Create(tt.args.ctx, tt.args.req)
 			require.Equal(t, tt.err, err)
+			require.Equal(t, tt.want, res)
 		})
 	}
 }
+*/

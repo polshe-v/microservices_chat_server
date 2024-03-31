@@ -1,7 +1,7 @@
 -- +goose Up
 -- +goose StatementBegin
 CREATE TABLE chats (
-    id serial primary key,
+    id uuid primary key default gen_random_uuid(),
     usernames text[] not null
 );
 -- +goose StatementEnd

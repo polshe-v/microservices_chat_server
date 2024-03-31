@@ -2,6 +2,7 @@ package chat
 
 import (
 	"context"
+	"log"
 
 	"github.com/polshe-v/microservices_chat_server/internal/converter"
 	desc "github.com/polshe-v/microservices_chat_server/pkg/chat_v1"
@@ -14,6 +15,7 @@ func (i *Implementation) Create(ctx context.Context, req *desc.CreateRequest) (*
 		return nil, err
 	}
 
+	log.Print(id)
 	return &desc.CreateResponse{
 		Id: id,
 	}, nil
