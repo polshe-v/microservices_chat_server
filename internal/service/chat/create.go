@@ -34,5 +34,8 @@ func (s *serv) Create(ctx context.Context, chat *model.Chat) (string, error) {
 		return "", errors.New("failed to create chat")
 	}
 
+	// Create buffered channel for new chat
+	s.channels[id] = make(chan *model.Message, messagesBuffer)
+
 	return id, nil
 }

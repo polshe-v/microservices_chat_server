@@ -81,25 +81,26 @@ func (r *repo) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
-// Send TODO
-/*func (r *repo) Send(ctx context.Context, id int64) error {
-	builderDelete := sq.Delete(tableName).
-		PlaceholderFormat(sq.Dollar).
-		Where(sq.Eq{idColumn: id})
+func (r *repo) GetChats(ctx context.Context) ([]string, error) {
+	builderSelect := sq.Select(idColumn).
+		From(tableName).
+		PlaceholderFormat(sq.Dollar)
 
-	query, args, err := builderDelete.ToSql()
+	query, args, err := builderSelect.ToSql()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	q := db.Query{
-		Name:     "chat_repository.Delete",
+		Name:     "chat_repository.GetChats",
 		QueryRaw: query,
 	}
 
-	_, err = r.db.DB().ExecContext(ctx, q, args...)
+	var uuids uuid.UUIDs
+	err = r.db.DB().ScanAllContext(ctx, &uuids, q, args...)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
-}*/
+
+	return uuids.Strings(), nil
+}

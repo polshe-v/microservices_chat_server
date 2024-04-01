@@ -18,6 +18,7 @@ import (
 	"github.com/polshe-v/microservices_chat_server/internal/repository"
 	chatRepository "github.com/polshe-v/microservices_chat_server/internal/repository/chat"
 	logRepository "github.com/polshe-v/microservices_chat_server/internal/repository/log"
+	messagesRepository "github.com/polshe-v/microservices_chat_server/internal/repository/messages"
 	"github.com/polshe-v/microservices_chat_server/internal/service"
 	chatService "github.com/polshe-v/microservices_chat_server/internal/service/chat"
 	"github.com/polshe-v/microservices_common/pkg/closer"
@@ -37,10 +38,11 @@ type serviceProvider struct {
 	txManager         db.TxManager
 	interceptorClient *interceptor.Client
 
-	chatRepository repository.ChatRepository
-	logRepository  repository.LogRepository
-	chatService    service.ChatService
-	chatImpl       *chat.Implementation
+	chatRepository     repository.ChatRepository
+	messagesRepository repository.MessagesRepository
+	logRepository      repository.LogRepository
+	chatService        service.ChatService
+	chatImpl           *chat.Implementation
 }
 
 func newServiceProvider() *serviceProvider {
@@ -165,6 +167,13 @@ func (s *serviceProvider) ChatRepository(ctx context.Context) repository.ChatRep
 	return s.chatRepository
 }
 
+func (s *serviceProvider) MessagesRepository(ctx context.Context) repository.MessagesRepository {
+	if s.messagesRepository == nil {
+		s.messagesRepository = messagesRepository.NewRepository(s.DBClient(ctx))
+	}
+	return s.messagesRepository
+}
+
 func (s *serviceProvider) LogRepository(ctx context.Context) repository.LogRepository {
 	if s.logRepository == nil {
 		s.logRepository = logRepository.NewRepository(s.DBClient(ctx))
@@ -174,7 +183,7 @@ func (s *serviceProvider) LogRepository(ctx context.Context) repository.LogRepos
 
 func (s *serviceProvider) ChatService(ctx context.Context) service.ChatService {
 	if s.chatService == nil {
-		s.chatService = chatService.NewService(s.ChatRepository(ctx), s.LogRepository(ctx), s.TxManager(ctx))
+		s.chatService = chatService.NewService(s.ChatRepository(ctx), s.MessagesRepository(ctx), s.LogRepository(ctx), s.TxManager(ctx))
 	}
 	return s.chatService
 }

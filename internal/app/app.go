@@ -61,6 +61,7 @@ func (a *App) initDeps(ctx context.Context) error {
 		a.initServiceProvider,
 		a.initGrpcServer,
 		a.initTracing,
+		a.initChatChannels,
 	}
 
 	for _, f := range inits {
@@ -156,6 +157,10 @@ func (a *App) initTracing(ctx context.Context) error {
 	})
 
 	return nil
+}
+
+func (a *App) initChatChannels(ctx context.Context) error {
+	return a.serviceProvider.ChatService(ctx).InitChannels(ctx)
 }
 
 func (a *App) runGrpcServer() error {

@@ -30,5 +30,8 @@ func (s *serv) Delete(ctx context.Context, id string) error {
 		log.Print(err)
 		return errors.New("failed to delete chat")
 	}
+
+	// Delete channel associated with chat
+	delete(s.channels, id)
 	return nil
 }

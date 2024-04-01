@@ -42,6 +42,6 @@ message SendMessageRequest {
 }
 
 message ConnectRequest {
-	string id = 1;
+	string chat_id = 1;
 	string username = 2;
 }

@@ -2,7 +2,6 @@ FROM alpine:3.19
 ARG ENV=$ENV
 
 RUN apk update && \
-    apk upgrade && \
     apk add bash && \
     rm -rf /var/cache/apk/*
 

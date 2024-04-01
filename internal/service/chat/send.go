@@ -1,40 +1,27 @@
 package chat
 
-/*import (
+import (
 	"context"
 	"errors"
-	"fmt"
-	"log"
 
 	"github.com/polshe-v/microservices_chat_server/internal/model"
 )
 
-// Send TODO
-func (s *serv) Send(ctx context.Context, chat *model.Chat) (int64, error) {
-	var id int64
+func (s *serv) SendMessage(ctx context.Context, chatID string, message *model.Message) error {
+	s.mxChannels.RLock()
+	chatChan, ok := s.channels[chatID]
+	s.mxChannels.RUnlock()
 
-	err := s.txManager.ReadCommitted(ctx, func(ctx context.Context) error {
-		var errTx error
-		id, errTx = s.chatRepository.Create(ctx, chat)
-		if errTx != nil {
-			return errTx
-		}
-
-		errTx = s.logRepository.Log(ctx, &model.Log{
-			Text: fmt.Sprintf("Created chat with id: %d", id),
-		})
-		if errTx != nil {
-			return errTx
-		}
-
-		return nil
-	})
-
-	if err != nil {
-		log.Print(err)
-		return 0, errors.New("failed to create chat")
+	if !ok {
+		return errors.New("chat not found")
 	}
 
-	return id, nil
+	// Save message in repository
+	err := s.messagesRepository.Create(ctx, chatID, message)
+	if err != nil {
+		return err
+	}
+
+	chatChan <- message
+	return nil
 }
-*/

@@ -22,6 +22,7 @@ func TestCreate(t *testing.T) {
 	t.Parallel()
 
 	type chatRepositoryMockFunc func(mc *minimock.Controller) repository.ChatRepository
+	type messagesRepositoryMockFunc func(mc *minimock.Controller) repository.MessagesRepository
 	type logRepositoryMockFunc func(mc *minimock.Controller) repository.LogRepository
 	type transactorMockFunc func(mc *minimock.Controller) db.Transactor
 
@@ -51,13 +52,14 @@ func TestCreate(t *testing.T) {
 	)
 
 	tests := []struct {
-		name               string
-		args               args
-		want               string
-		err                error
-		chatRepositoryMock chatRepositoryMockFunc
-		logRepositoryMock  logRepositoryMockFunc
-		transactorMock     transactorMockFunc
+		name                   string
+		args                   args
+		want                   string
+		err                    error
+		chatRepositoryMock     chatRepositoryMockFunc
+		messagesRepositoryMock messagesRepositoryMockFunc
+		logRepositoryMock      logRepositoryMockFunc
+		transactorMock         transactorMockFunc
 	}{
 		{
 			name: "success case",
@@ -70,6 +72,10 @@ func TestCreate(t *testing.T) {
 			chatRepositoryMock: func(mc *minimock.Controller) repository.ChatRepository {
 				mock := repositoryMocks.NewChatRepositoryMock(mc)
 				mock.CreateMock.Expect(minimock.AnyContext, req).Return(id, nil)
+				return mock
+			},
+			messagesRepositoryMock: func(mc *minimock.Controller) repository.MessagesRepository {
+				mock := repositoryMocks.NewMessagesRepositoryMock(mc)
 				return mock
 			},
 			logRepositoryMock: func(mc *minimock.Controller) repository.LogRepository {
@@ -98,6 +104,10 @@ func TestCreate(t *testing.T) {
 				mock.CreateMock.Expect(minimock.AnyContext, req).Return("", repositoryErr)
 				return mock
 			},
+			messagesRepositoryMock: func(mc *minimock.Controller) repository.MessagesRepository {
+				mock := repositoryMocks.NewMessagesRepositoryMock(mc)
+				return mock
+			},
 			logRepositoryMock: func(mc *minimock.Controller) repository.LogRepository {
 				mock := repositoryMocks.NewLogRepositoryMock(mc)
 				return mock
@@ -123,6 +133,10 @@ func TestCreate(t *testing.T) {
 				mock.CreateMock.Expect(minimock.AnyContext, req).Return(id, nil)
 				return mock
 			},
+			messagesRepositoryMock: func(mc *minimock.Controller) repository.MessagesRepository {
+				mock := repositoryMocks.NewMessagesRepositoryMock(mc)
+				return mock
+			},
 			logRepositoryMock: func(mc *minimock.Controller) repository.LogRepository {
 				mock := repositoryMocks.NewLogRepositoryMock(mc)
 				mock.LogMock.Expect(minimock.AnyContext, reqLog).Return(repositoryErr)
@@ -144,9 +158,10 @@ func TestCreate(t *testing.T) {
 			t.Parallel()
 
 			chatRepositoryMock := tt.chatRepositoryMock(mc)
+			messagesRepositoryMock := tt.messagesRepositoryMock(mc)
 			logRepositoryMock := tt.logRepositoryMock(mc)
 			txManagerMock := transaction.NewTransactionManager(tt.transactorMock(mc))
-			srv := chatService.NewService(chatRepositoryMock, logRepositoryMock, txManagerMock)
+			srv := chatService.NewService(chatRepositoryMock, messagesRepositoryMock, logRepositoryMock, txManagerMock)
 
 			res, err := srv.Create(tt.args.ctx, tt.args.req)
 			require.Equal(t, tt.err, err)
