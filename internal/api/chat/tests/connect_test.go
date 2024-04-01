@@ -1,7 +1,6 @@
 package tests
 
 /*import (
-	"context"
 	"fmt"
 	"testing"
 
@@ -15,73 +14,62 @@ package tests
 	desc "github.com/polshe-v/microservices_chat_server/pkg/chat_v1"
 )
 
-// TODO
 func TestConnect(t *testing.T) {
 	t.Parallel()
 
 	type chatServiceMockFunc func(mc *minimock.Controller) service.ChatService
 
 	type args struct {
-		ctx context.Context
-		req *desc.CreateRequest
+		req    *desc.ConnectRequest
+		stream desc.ChatV1_ConnectServer
 	}
 
 	var (
-		ctx = context.Background()
-		mc  = minimock.NewController(t)
+		mc = minimock.NewController(t)
 
-		id        = int64(1)
-		usernames = []string{"name1", "name2", "name3"}
+		chatID   = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+		username = "username"
 
 		serviceErr = fmt.Errorf("service error")
 
-		req = &desc.CreateRequest{
-			Chat: &desc.Chat{
-				Usernames: usernames,
-			},
-		}
+		stream        desc.ChatV1_ConnectServer
+		serviceStream model.Stream
 
-		chat = &model.Chat{
-			Usernames: usernames,
-		}
-
-		res = &desc.CreateResponse{
-			Id: id,
+		req = &desc.ConnectRequest{
+			ChatId:   chatID,
+			Username: username,
 		}
 	)
 
 	tests := []struct {
 		name            string
 		args            args
-		want            *desc.CreateResponse
 		err             error
 		chatServiceMock chatServiceMockFunc
 	}{
 		{
 			name: "success case",
 			args: args{
-				ctx: ctx,
-				req: req,
+				req:    req,
+				stream: stream,
 			},
-			want: res,
-			err:  nil,
+			err: nil,
 			chatServiceMock: func(mc *minimock.Controller) service.ChatService {
 				mock := serviceMocks.NewChatServiceMock(mc)
-				mock.CreateMock.Expect(ctx, chat).Return(id, nil)
+				mock.ConnectMock.Expect(chatID, username, serviceStream).Return(nil)
 				return mock
 			},
 		},
 		{
 			name: "service error case",
 			args: args{
-				ctx: ctx,
-				req: req,
+				req:    req,
+				stream: stream,
 			},
-			want: nil,
-			err:  serviceErr,
+			err: serviceErr,
 			chatServiceMock: func(mc *minimock.Controller) service.ChatService {
 				mock := serviceMocks.NewChatServiceMock(mc)
-				mock.CreateMock.Expect(ctx, chat).Return(0, serviceErr)
+				mock.ConnectMock.Expect(chatID, username, serviceStream).Return(serviceErr)
 				return mock
 			},
 		},
@@ -95,10 +83,8 @@ func TestConnect(t *testing.T) {
 			chatServiceMock := tt.chatServiceMock(mc)
 			api := chatAPI.NewImplementation(chatServiceMock)
 
-			res, err := api.Create(tt.args.ctx, tt.args.req)
+			err := api.Connect(tt.args.req, tt.args.stream)
 			require.Equal(t, tt.err, err)
-			require.Equal(t, tt.want, res)
 		})
 	}
-}
-*/
+}*/

@@ -2,6 +2,7 @@ package tests
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/gojuno/minimock/v3"
@@ -10,6 +11,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	chatAPI "github.com/polshe-v/microservices_chat_server/internal/api/chat"
+	"github.com/polshe-v/microservices_chat_server/internal/model"
 	"github.com/polshe-v/microservices_chat_server/internal/service"
 	serviceMocks "github.com/polshe-v/microservices_chat_server/internal/service/mocks"
 	desc "github.com/polshe-v/microservices_chat_server/pkg/chat_v1"
@@ -29,9 +31,19 @@ func TestSend(t *testing.T) {
 		ctx = context.Background()
 		mc  = minimock.NewController(t)
 
+		chatID = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+
 		from      = "from"
 		text      = "text"
 		timestamp = timestamppb.Now()
+
+		message = &model.Message{
+			From:      from,
+			Text:      text,
+			Timestamp: timestamp.AsTime(),
+		}
+
+		serviceErr = fmt.Errorf("service error")
 
 		req = &desc.SendMessageRequest{
 			Message: &desc.Message{
@@ -39,6 +51,7 @@ func TestSend(t *testing.T) {
 				Text:      text,
 				Timestamp: timestamp,
 			},
+			ChatId: chatID,
 		}
 
 		res = &empty.Empty{}
@@ -61,6 +74,21 @@ func TestSend(t *testing.T) {
 			err:  nil,
 			chatServiceMock: func(mc *minimock.Controller) service.ChatService {
 				mock := serviceMocks.NewChatServiceMock(mc)
+				mock.SendMessageMock.Expect(ctx, chatID, message).Return(nil)
+				return mock
+			},
+		},
+		{
+			name: "service error case",
+			args: args{
+				ctx: ctx,
+				req: req,
+			},
+			want: nil,
+			err:  serviceErr,
+			chatServiceMock: func(mc *minimock.Controller) service.ChatService {
+				mock := serviceMocks.NewChatServiceMock(mc)
+				mock.SendMessageMock.Expect(ctx, chatID, message).Return(serviceErr)
 				return mock
 			},
 		},

@@ -1,7 +1,7 @@
 FROM golang:1.22.1-alpine3.19 AS builder
 ARG ENV
 
-RUN apk update && \
+RUN apk update && apk upgrade --available && \
     apk add make && \
     adduser \
     --disabled-password \

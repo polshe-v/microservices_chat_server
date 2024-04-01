@@ -19,7 +19,7 @@ func (s *serv) SendMessage(ctx context.Context, chatID string, message *model.Me
 	// Save message in repository
 	err := s.messagesRepository.Create(ctx, chatID, message)
 	if err != nil {
-		return err
+		return errors.New("failed to save message")
 	}
 
 	chatChan <- message
