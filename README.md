@@ -22,3 +22,21 @@ To stop Chat Service:
 ```
 # make docker-stop ENV=<environment>
 ```
+
+# Chat Client
+
+Simple cli utility for communicating with each other through chats can be built with:
+```
+make build-chat-client
+```
+
+Usage examples:
+
+```
+bin/chat-client login --address=localhost:50000 --cert=tls/auth.pem
+bin/chat-client logout
+
+bin/chat-client create chat --address=localhost:50001 --cert=tls/chat.pem --users=Alice,Bob,Carol
+bin/chat-client delete chat --address=localhost:50001 --cert=tls/chat.pem --id=45d8c8ce-818d-40bc-8e6c-6afd28cf34b4
+bin/chat-client connect chat --address=localhost:50001 --cert=tls/chat.pem --id=45d8c8ce-818d-40bc-8e6c-6afd28cf34b4
+```

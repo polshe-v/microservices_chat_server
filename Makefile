@@ -78,7 +78,7 @@ test-coverage:
 # BUILD #
 # ##### #
 
-build-cli:
+build-chat-client:
 	GOOS=linux GOARCH=amd64 go build -o $(LOCAL_BIN)/${CLI_BINARY_NAME} cli/cmd/main.go
 
 build-app:

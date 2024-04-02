@@ -23,6 +23,12 @@ type MessagesRepositoryMock struct {
 	beforeCreateCounter uint64
 	CreateMock          mMessagesRepositoryMockCreate
 
+	funcDeleteChat          func(ctx context.Context, chatID string) (err error)
+	inspectFuncDeleteChat   func(ctx context.Context, chatID string)
+	afterDeleteChatCounter  uint64
+	beforeDeleteChatCounter uint64
+	DeleteChatMock          mMessagesRepositoryMockDeleteChat
+
 	funcGetMessages          func(ctx context.Context, chatID string) (mpa1 []*model.Message, err error)
 	inspectFuncGetMessages   func(ctx context.Context, chatID string)
 	afterGetMessagesCounter  uint64
@@ -40,6 +46,9 @@ func NewMessagesRepositoryMock(t minimock.Tester) *MessagesRepositoryMock {
 
 	m.CreateMock = mMessagesRepositoryMockCreate{mock: m}
 	m.CreateMock.callArgs = []*MessagesRepositoryMockCreateParams{}
+
+	m.DeleteChatMock = mMessagesRepositoryMockDeleteChat{mock: m}
+	m.DeleteChatMock.callArgs = []*MessagesRepositoryMockDeleteChatParams{}
 
 	m.GetMessagesMock = mMessagesRepositoryMockGetMessages{mock: m}
 	m.GetMessagesMock.callArgs = []*MessagesRepositoryMockGetMessagesParams{}
@@ -266,6 +275,222 @@ func (m *MessagesRepositoryMock) MinimockCreateInspect() {
 	}
 }
 
+type mMessagesRepositoryMockDeleteChat struct {
+	mock               *MessagesRepositoryMock
+	defaultExpectation *MessagesRepositoryMockDeleteChatExpectation
+	expectations       []*MessagesRepositoryMockDeleteChatExpectation
+
+	callArgs []*MessagesRepositoryMockDeleteChatParams
+	mutex    sync.RWMutex
+}
+
+// MessagesRepositoryMockDeleteChatExpectation specifies expectation struct of the MessagesRepository.DeleteChat
+type MessagesRepositoryMockDeleteChatExpectation struct {
+	mock    *MessagesRepositoryMock
+	params  *MessagesRepositoryMockDeleteChatParams
+	results *MessagesRepositoryMockDeleteChatResults
+	Counter uint64
+}
+
+// MessagesRepositoryMockDeleteChatParams contains parameters of the MessagesRepository.DeleteChat
+type MessagesRepositoryMockDeleteChatParams struct {
+	ctx    context.Context
+	chatID string
+}
+
+// MessagesRepositoryMockDeleteChatResults contains results of the MessagesRepository.DeleteChat
+type MessagesRepositoryMockDeleteChatResults struct {
+	err error
+}
+
+// Expect sets up expected params for MessagesRepository.DeleteChat
+func (mmDeleteChat *mMessagesRepositoryMockDeleteChat) Expect(ctx context.Context, chatID string) *mMessagesRepositoryMockDeleteChat {
+	if mmDeleteChat.mock.funcDeleteChat != nil {
+		mmDeleteChat.mock.t.Fatalf("MessagesRepositoryMock.DeleteChat mock is already set by Set")
+	}
+
+	if mmDeleteChat.defaultExpectation == nil {
+		mmDeleteChat.defaultExpectation = &MessagesRepositoryMockDeleteChatExpectation{}
+	}
+
+	mmDeleteChat.defaultExpectation.params = &MessagesRepositoryMockDeleteChatParams{ctx, chatID}
+	for _, e := range mmDeleteChat.expectations {
+		if minimock.Equal(e.params, mmDeleteChat.defaultExpectation.params) {
+			mmDeleteChat.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmDeleteChat.defaultExpectation.params)
+		}
+	}
+
+	return mmDeleteChat
+}
+
+// Inspect accepts an inspector function that has same arguments as the MessagesRepository.DeleteChat
+func (mmDeleteChat *mMessagesRepositoryMockDeleteChat) Inspect(f func(ctx context.Context, chatID string)) *mMessagesRepositoryMockDeleteChat {
+	if mmDeleteChat.mock.inspectFuncDeleteChat != nil {
+		mmDeleteChat.mock.t.Fatalf("Inspect function is already set for MessagesRepositoryMock.DeleteChat")
+	}
+
+	mmDeleteChat.mock.inspectFuncDeleteChat = f
+
+	return mmDeleteChat
+}
+
+// Return sets up results that will be returned by MessagesRepository.DeleteChat
+func (mmDeleteChat *mMessagesRepositoryMockDeleteChat) Return(err error) *MessagesRepositoryMock {
+	if mmDeleteChat.mock.funcDeleteChat != nil {
+		mmDeleteChat.mock.t.Fatalf("MessagesRepositoryMock.DeleteChat mock is already set by Set")
+	}
+
+	if mmDeleteChat.defaultExpectation == nil {
+		mmDeleteChat.defaultExpectation = &MessagesRepositoryMockDeleteChatExpectation{mock: mmDeleteChat.mock}
+	}
+	mmDeleteChat.defaultExpectation.results = &MessagesRepositoryMockDeleteChatResults{err}
+	return mmDeleteChat.mock
+}
+
+// Set uses given function f to mock the MessagesRepository.DeleteChat method
+func (mmDeleteChat *mMessagesRepositoryMockDeleteChat) Set(f func(ctx context.Context, chatID string) (err error)) *MessagesRepositoryMock {
+	if mmDeleteChat.defaultExpectation != nil {
+		mmDeleteChat.mock.t.Fatalf("Default expectation is already set for the MessagesRepository.DeleteChat method")
+	}
+
+	if len(mmDeleteChat.expectations) > 0 {
+		mmDeleteChat.mock.t.Fatalf("Some expectations are already set for the MessagesRepository.DeleteChat method")
+	}
+
+	mmDeleteChat.mock.funcDeleteChat = f
+	return mmDeleteChat.mock
+}
+
+// When sets expectation for the MessagesRepository.DeleteChat which will trigger the result defined by the following
+// Then helper
+func (mmDeleteChat *mMessagesRepositoryMockDeleteChat) When(ctx context.Context, chatID string) *MessagesRepositoryMockDeleteChatExpectation {
+	if mmDeleteChat.mock.funcDeleteChat != nil {
+		mmDeleteChat.mock.t.Fatalf("MessagesRepositoryMock.DeleteChat mock is already set by Set")
+	}
+
+	expectation := &MessagesRepositoryMockDeleteChatExpectation{
+		mock:   mmDeleteChat.mock,
+		params: &MessagesRepositoryMockDeleteChatParams{ctx, chatID},
+	}
+	mmDeleteChat.expectations = append(mmDeleteChat.expectations, expectation)
+	return expectation
+}
+
+// Then sets up MessagesRepository.DeleteChat return parameters for the expectation previously defined by the When method
+func (e *MessagesRepositoryMockDeleteChatExpectation) Then(err error) *MessagesRepositoryMock {
+	e.results = &MessagesRepositoryMockDeleteChatResults{err}
+	return e.mock
+}
+
+// DeleteChat implements repository.MessagesRepository
+func (mmDeleteChat *MessagesRepositoryMock) DeleteChat(ctx context.Context, chatID string) (err error) {
+	mm_atomic.AddUint64(&mmDeleteChat.beforeDeleteChatCounter, 1)
+	defer mm_atomic.AddUint64(&mmDeleteChat.afterDeleteChatCounter, 1)
+
+	if mmDeleteChat.inspectFuncDeleteChat != nil {
+		mmDeleteChat.inspectFuncDeleteChat(ctx, chatID)
+	}
+
+	mm_params := MessagesRepositoryMockDeleteChatParams{ctx, chatID}
+
+	// Record call args
+	mmDeleteChat.DeleteChatMock.mutex.Lock()
+	mmDeleteChat.DeleteChatMock.callArgs = append(mmDeleteChat.DeleteChatMock.callArgs, &mm_params)
+	mmDeleteChat.DeleteChatMock.mutex.Unlock()
+
+	for _, e := range mmDeleteChat.DeleteChatMock.expectations {
+		if minimock.Equal(*e.params, mm_params) {
+			mm_atomic.AddUint64(&e.Counter, 1)
+			return e.results.err
+		}
+	}
+
+	if mmDeleteChat.DeleteChatMock.defaultExpectation != nil {
+		mm_atomic.AddUint64(&mmDeleteChat.DeleteChatMock.defaultExpectation.Counter, 1)
+		mm_want := mmDeleteChat.DeleteChatMock.defaultExpectation.params
+		mm_got := MessagesRepositoryMockDeleteChatParams{ctx, chatID}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmDeleteChat.t.Errorf("MessagesRepositoryMock.DeleteChat got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+		}
+
+		mm_results := mmDeleteChat.DeleteChatMock.defaultExpectation.results
+		if mm_results == nil {
+			mmDeleteChat.t.Fatal("No results are set for the MessagesRepositoryMock.DeleteChat")
+		}
+		return (*mm_results).err
+	}
+	if mmDeleteChat.funcDeleteChat != nil {
+		return mmDeleteChat.funcDeleteChat(ctx, chatID)
+	}
+	mmDeleteChat.t.Fatalf("Unexpected call to MessagesRepositoryMock.DeleteChat. %v %v", ctx, chatID)
+	return
+}
+
+// DeleteChatAfterCounter returns a count of finished MessagesRepositoryMock.DeleteChat invocations
+func (mmDeleteChat *MessagesRepositoryMock) DeleteChatAfterCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmDeleteChat.afterDeleteChatCounter)
+}
+
+// DeleteChatBeforeCounter returns a count of MessagesRepositoryMock.DeleteChat invocations
+func (mmDeleteChat *MessagesRepositoryMock) DeleteChatBeforeCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmDeleteChat.beforeDeleteChatCounter)
+}
+
+// Calls returns a list of arguments used in each call to MessagesRepositoryMock.DeleteChat.
+// The list is in the same order as the calls were made (i.e. recent calls have a higher index)
+func (mmDeleteChat *mMessagesRepositoryMockDeleteChat) Calls() []*MessagesRepositoryMockDeleteChatParams {
+	mmDeleteChat.mutex.RLock()
+
+	argCopy := make([]*MessagesRepositoryMockDeleteChatParams, len(mmDeleteChat.callArgs))
+	copy(argCopy, mmDeleteChat.callArgs)
+
+	mmDeleteChat.mutex.RUnlock()
+
+	return argCopy
+}
+
+// MinimockDeleteChatDone returns true if the count of the DeleteChat invocations corresponds
+// the number of defined expectations
+func (m *MessagesRepositoryMock) MinimockDeleteChatDone() bool {
+	for _, e := range m.DeleteChatMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			return false
+		}
+	}
+
+	// if default expectation was set then invocations count should be greater than zero
+	if m.DeleteChatMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterDeleteChatCounter) < 1 {
+		return false
+	}
+	// if func was set then invocations count should be greater than zero
+	if m.funcDeleteChat != nil && mm_atomic.LoadUint64(&m.afterDeleteChatCounter) < 1 {
+		return false
+	}
+	return true
+}
+
+// MinimockDeleteChatInspect logs each unmet expectation
+func (m *MessagesRepositoryMock) MinimockDeleteChatInspect() {
+	for _, e := range m.DeleteChatMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			m.t.Errorf("Expected call to MessagesRepositoryMock.DeleteChat with params: %#v", *e.params)
+		}
+	}
+
+	// if default expectation was set then invocations count should be greater than zero
+	if m.DeleteChatMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterDeleteChatCounter) < 1 {
+		if m.DeleteChatMock.defaultExpectation.params == nil {
+			m.t.Error("Expected call to MessagesRepositoryMock.DeleteChat")
+		} else {
+			m.t.Errorf("Expected call to MessagesRepositoryMock.DeleteChat with params: %#v", *m.DeleteChatMock.defaultExpectation.params)
+		}
+	}
+	// if func was set then invocations count should be greater than zero
+	if m.funcDeleteChat != nil && mm_atomic.LoadUint64(&m.afterDeleteChatCounter) < 1 {
+		m.t.Error("Expected call to MessagesRepositoryMock.DeleteChat")
+	}
+}
+
 type mMessagesRepositoryMockGetMessages struct {
 	mock               *MessagesRepositoryMock
 	defaultExpectation *MessagesRepositoryMockGetMessagesExpectation
@@ -489,6 +714,8 @@ func (m *MessagesRepositoryMock) MinimockFinish() {
 		if !m.minimockDone() {
 			m.MinimockCreateInspect()
 
+			m.MinimockDeleteChatInspect()
+
 			m.MinimockGetMessagesInspect()
 			m.t.FailNow()
 		}
@@ -515,5 +742,6 @@ func (m *MessagesRepositoryMock) minimockDone() bool {
 	done := true
 	return done &&
 		m.MinimockCreateDone() &&
+		m.MinimockDeleteChatDone() &&
 		m.MinimockGetMessagesDone()
 }

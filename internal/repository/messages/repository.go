@@ -89,3 +89,30 @@ func (r *repo) GetMessages(ctx context.Context, chatID string) ([]*model.Message
 
 	return converter.ToMessagesFromRepo(messages), nil
 }
+
+func (r *repo) DeleteChat(ctx context.Context, chatID string) error {
+	id, err := uuid.Parse(chatID)
+	if err != nil {
+		return err
+	}
+
+	builderDelete := sq.Delete(tableName).
+		PlaceholderFormat(sq.Dollar).
+		Where(sq.Eq{chatIDColumn: id})
+
+	query, args, err := builderDelete.ToSql()
+	if err != nil {
+		return err
+	}
+
+	q := db.Query{
+		Name:     "messages_repository.DeleteChat",
+		QueryRaw: query,
+	}
+
+	_, err = r.db.DB().ExecContext(ctx, q, args...)
+	if err != nil {
+		return err
+	}
+	return nil
+}

@@ -17,6 +17,7 @@ type ChatRepository interface {
 type MessagesRepository interface {
 	Create(ctx context.Context, chatID string, message *model.Message) error
 	GetMessages(ctx context.Context, chatID string) ([]*model.Message, error)
+	DeleteChat(ctx context.Context, chatID string) error
 }
 
 // LogRepository is the interface for transaction log repository communication.

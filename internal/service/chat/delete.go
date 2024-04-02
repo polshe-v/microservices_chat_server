@@ -12,6 +12,11 @@ import (
 func (s *serv) Delete(ctx context.Context, id string) error {
 	err := s.txManager.ReadCommitted(ctx, func(ctx context.Context) error {
 		var errTx error
+		errTx = s.messagesRepository.DeleteChat(ctx, id)
+		if errTx != nil {
+			return errTx
+		}
+
 		errTx = s.chatRepository.Delete(ctx, id)
 		if errTx != nil {
 			return errTx
