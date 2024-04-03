@@ -2,10 +2,8 @@ package root
 
 import (
 	"context"
-	"fmt"
 	"log"
 
-	"github.com/fatih/color"
 	"google.golang.org/grpc/metadata"
 
 	desc "github.com/polshe-v/microservices_chat_server/pkg/chat_v1"
@@ -35,7 +33,7 @@ func deleteChat(ctx context.Context, address string, certPath string, chatID str
 		return err
 	}
 
-	md := metadata.New(map[string]string{"Authorization": "Bearer " + accessToken})
+	md := metadata.New(map[string]string{"Authorization": tokenHeader + accessToken})
 	ctx = metadata.NewOutgoingContext(ctx, md)
 	_, err = client.Delete(ctx, &desc.DeleteRequest{
 		Id: chatID,
@@ -44,6 +42,5 @@ func deleteChat(ctx context.Context, address string, certPath string, chatID str
 		return err
 	}
 
-	fmt.Printf("[%s %s]\n", color.CyanString("Deleted chat "), color.YellowString(chatID))
 	return nil
 }

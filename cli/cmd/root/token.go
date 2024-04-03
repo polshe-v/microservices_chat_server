@@ -7,6 +7,8 @@ import (
 	"time"
 
 	jwt "github.com/golang-jwt/jwt/v5"
+
+	"github.com/polshe-v/microservices_common/pkg/closer"
 )
 
 type userClaims struct {
@@ -20,7 +22,7 @@ func readToken() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer file.Close()
+	closer.Add(file.Close)
 
 	token, err := io.ReadAll(file)
 	if err != nil {

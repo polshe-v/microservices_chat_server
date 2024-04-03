@@ -10,6 +10,7 @@ import (
 	"golang.org/x/term"
 
 	desc "github.com/polshe-v/microservices_auth/pkg/auth_v1"
+	"github.com/polshe-v/microservices_common/pkg/closer"
 )
 
 func login(ctx context.Context, address string, certPath string) error {
@@ -49,19 +50,21 @@ func login(ctx context.Context, address string, certPath string) error {
 	}
 
 	// Save access token in file for later operations
-	f, err := os.Create(filename)
+	file, err := os.Create(filename)
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	closer.Add(file.Close)
 
-	w := bufio.NewWriter(f)
-	_, err = w.WriteString(resAccessToken.GetAccessToken())
+	wr := bufio.NewWriter(file)
+	_, err = wr.WriteString(resAccessToken.GetAccessToken())
 	if err != nil {
 		return err
 	}
-	w.Flush()
 
-	fmt.Println(color.GreenString("\n\n[Successfully logged in]\n"))
+	err = wr.Flush()
+	if err != nil {
+		return err
+	}
 	return nil
 }

@@ -2,14 +2,32 @@ package root
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"strings"
 
+	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
 
-var filename = ".access_token"
+const (
+	filename = ".access_token"
+
+	tokenHeader = "Bearer "
+
+	lineUp = "\033[1A"
+
+	addressFlag  = "address"
+	certPathFlag = "cert"
+	idFlag       = "id"
+	usersFlag    = "users"
+
+	addressFlagShort  = "a"
+	certPathFlagShort = "c"
+	idFlagShort       = "n"
+	usersFlagShort    = "u"
+)
 
 // rootCmd represents the base command
 var rootCmd = &cobra.Command{
@@ -21,19 +39,21 @@ var loginCmd = &cobra.Command{
 	Use:   "login",
 	Short: "Login to chat service",
 	Run: func(cmd *cobra.Command, _ []string) {
-		addr, err := cmd.Flags().GetString("address")
+		addr, err := cmd.Flags().GetString(addressFlag)
 		if err != nil {
-			log.Fatalf("failed to get address: %v", err)
+			log.Fatalf("failed to get %s: %v", addressFlag, err)
 		}
 
-		certPath, err := cmd.Flags().GetString("cert")
+		certPath, err := cmd.Flags().GetString(certPathFlag)
 		if err != nil {
-			log.Fatalf("failed to get certificate path: %v", err)
+			log.Fatalf("failed to get %s: %v", certPathFlag, err)
 		}
 
 		err = login(context.Background(), addr, certPath)
 		if err != nil {
-			log.Fatalf("failed to login: %v", err)
+			log.Printf("failed to login: %v", err)
+		} else {
+			fmt.Println(color.GreenString("\n\n[Successfully logged in]\n"))
 		}
 	},
 }
@@ -44,7 +64,9 @@ var logoutCmd = &cobra.Command{
 	Run: func(_ *cobra.Command, _ []string) {
 		err := logout()
 		if err != nil {
-			log.Fatalf("failed to logout: %v", err)
+			log.Printf("failed to logout: %v", err)
+		} else {
+			fmt.Println(color.GreenString("\n\n[Successfully logged out]\n"))
 		}
 	},
 }
@@ -68,24 +90,26 @@ var createChatCmd = &cobra.Command{
 	Use:   "chat",
 	Short: "Create new chat",
 	Run: func(cmd *cobra.Command, _ []string) {
-		addr, err := cmd.Flags().GetString("address")
+		addr, err := cmd.Flags().GetString(addressFlag)
 		if err != nil {
-			log.Fatalf("failed to get address: %v", err)
+			log.Fatalf("failed to get %s: %v", addressFlag, err)
 		}
 
-		certPath, err := cmd.Flags().GetString("cert")
+		certPath, err := cmd.Flags().GetString(certPathFlag)
 		if err != nil {
-			log.Fatalf("failed to get certificate path: %v", err)
+			log.Fatalf("failed to get %s: %v", certPathFlag, err)
 		}
 
-		users, err := cmd.Flags().GetString("users")
+		users, err := cmd.Flags().GetString(usersFlag)
 		if err != nil {
 			log.Fatalf("failed to get users: %v", err)
 		}
 
-		err = createChat(context.Background(), addr, certPath, strings.Split(users, ","))
+		id, err := createChat(context.Background(), addr, certPath, strings.Split(users, ","))
 		if err != nil {
-			log.Fatalf("failed to create chat: %v", err)
+			log.Printf("failed to create chat: %v", err)
+		} else {
+			fmt.Printf("[%s %s]\n", color.CyanString("Created chat with id"), color.YellowString(id))
 		}
 	},
 }
@@ -94,24 +118,26 @@ var deleteChatCmd = &cobra.Command{
 	Use:   "chat",
 	Short: "Delete chat",
 	Run: func(cmd *cobra.Command, _ []string) {
-		addr, err := cmd.Flags().GetString("address")
+		addr, err := cmd.Flags().GetString(addressFlag)
 		if err != nil {
-			log.Fatalf("failed to get address: %v", err)
+			log.Fatalf("failed to get %s: %v", addressFlag, err)
 		}
 
-		certPath, err := cmd.Flags().GetString("cert")
+		certPath, err := cmd.Flags().GetString(certPathFlag)
 		if err != nil {
-			log.Fatalf("failed to get certificate path: %v", err)
+			log.Fatalf("failed to get %s: %v", certPathFlag, err)
 		}
 
-		id, err := cmd.Flags().GetString("id")
+		id, err := cmd.Flags().GetString(idFlag)
 		if err != nil {
-			log.Fatalf("failed to get chat id: %v", err)
+			log.Fatalf("failed to get %s: %v", idFlag, err)
 		}
 
 		err = deleteChat(context.Background(), addr, certPath, id)
 		if err != nil {
-			log.Fatalf("failed to delete chat: %v", err)
+			log.Printf("failed to delete chat: %v", err)
+		} else {
+			fmt.Printf("[%s %s]\n", color.CyanString("Deleted chat (if existed)"), color.YellowString(id))
 		}
 	},
 }
@@ -120,24 +146,24 @@ var connectChatCmd = &cobra.Command{
 	Use:   "chat",
 	Short: "Connect to chat",
 	Run: func(cmd *cobra.Command, _ []string) {
-		addr, err := cmd.Flags().GetString("address")
+		addr, err := cmd.Flags().GetString(addressFlag)
 		if err != nil {
-			log.Fatalf("failed to get address: %v", err)
+			log.Fatalf("failed to get %s: %v", addressFlag, err)
 		}
 
-		certPath, err := cmd.Flags().GetString("cert")
+		certPath, err := cmd.Flags().GetString(certPathFlag)
 		if err != nil {
-			log.Fatalf("failed to get certificate path: %v", err)
+			log.Fatalf("failed to get %s: %v", certPathFlag, err)
 		}
 
-		id, err := cmd.Flags().GetString("id")
+		id, err := cmd.Flags().GetString(idFlag)
 		if err != nil {
-			log.Fatalf("failed to get chat id: %v", err)
+			log.Fatalf("failed to get %s: %v", idFlag, err)
 		}
 
 		err = connectChat(context.Background(), addr, certPath, id)
 		if err != nil {
-			log.Fatalf("failed to connect to chat: %v", err)
+			log.Printf("failed to connect to chat: %v", err)
 		}
 	},
 }
@@ -163,66 +189,66 @@ func init() {
 	connectCmd.AddCommand(connectChatCmd)
 
 	// Add flags to commands
-	loginCmd.Flags().StringP("address", "a", "", "`IP:port` of authentication service")
-	loginCmd.Flags().StringP("cert", "c", "", "path to authentication service certificate")
-	createChatCmd.Flags().StringP("users", "u", "", "chat participants")
-	createChatCmd.Flags().StringP("address", "a", "", "`IP:port` of chat service")
-	createChatCmd.Flags().StringP("cert", "c", "", "path to chat service certificate")
-	deleteChatCmd.Flags().StringP("id", "n", "", "ID of the chat to delete")
-	deleteChatCmd.Flags().StringP("address", "a", "", "`IP:port` of chat service")
-	deleteChatCmd.Flags().StringP("cert", "c", "", "path to chat service certificate")
-	connectChatCmd.Flags().StringP("id", "n", "", "ID of the chat to connect")
-	connectChatCmd.Flags().StringP("address", "a", "", "`IP:port` of chat service")
-	connectChatCmd.Flags().StringP("cert", "c", "", "path to chat service certificate")
+	loginCmd.Flags().StringP(addressFlag, addressFlagShort, "", "`IP:port` of authentication service")
+	loginCmd.Flags().StringP(certPathFlag, certPathFlagShort, "", "path to authentication service certificate")
+	createChatCmd.Flags().StringP(usersFlag, usersFlagShort, "", "chat participants")
+	createChatCmd.Flags().StringP(addressFlag, addressFlagShort, "", "`IP:port` of chat service")
+	createChatCmd.Flags().StringP(certPathFlag, certPathFlagShort, "", "path to chat service certificate")
+	deleteChatCmd.Flags().StringP(idFlag, idFlagShort, "", "ID of the chat to delete")
+	deleteChatCmd.Flags().StringP(addressFlag, addressFlagShort, "", "`IP:port` of chat service")
+	deleteChatCmd.Flags().StringP(certPathFlag, certPathFlagShort, "", "path to chat service certificate")
+	connectChatCmd.Flags().StringP(idFlag, idFlagShort, "", "ID of the chat to connect")
+	connectChatCmd.Flags().StringP(addressFlag, addressFlagShort, "", "`IP:port` of chat service")
+	connectChatCmd.Flags().StringP(certPathFlag, certPathFlagShort, "", "path to chat service certificate")
 
 	// Mark required flags in commands
-	err := loginCmd.MarkFlagRequired("address")
+	err := loginCmd.MarkFlagRequired(addressFlag)
 	if err != nil {
-		log.Fatalf("failed to mark address flag as required: %v", err)
+		log.Fatalf("failed to mark %s flag as required: %v", addressFlag, err)
 	}
 
-	err = loginCmd.MarkFlagRequired("cert")
+	err = loginCmd.MarkFlagRequired(certPathFlag)
 	if err != nil {
-		log.Fatalf("failed to mark cert flag as required: %v", err)
+		log.Fatalf("failed to mark %s flag as required: %v", certPathFlag, err)
 	}
 
-	err = createChatCmd.MarkFlagRequired("address")
+	err = createChatCmd.MarkFlagRequired(addressFlag)
 	if err != nil {
-		log.Fatalf("failed to mark id flag as required: %v", err)
+		log.Fatalf("failed to mark %s flag as required: %v", idFlag, err)
 	}
 
-	err = createChatCmd.MarkFlagRequired("cert")
+	err = createChatCmd.MarkFlagRequired(certPathFlag)
 	if err != nil {
-		log.Fatalf("failed to mark cert flag as required: %v", err)
+		log.Fatalf("failed to mark %s flag as required: %v", certPathFlag, err)
 	}
 
-	err = deleteChatCmd.MarkFlagRequired("id")
+	err = deleteChatCmd.MarkFlagRequired(idFlag)
 	if err != nil {
-		log.Fatalf("failed to mark id flag as required: %v", err)
+		log.Fatalf("failed to mark %s flag as required: %v", idFlag, err)
 	}
 
-	err = deleteChatCmd.MarkFlagRequired("address")
+	err = deleteChatCmd.MarkFlagRequired(addressFlag)
 	if err != nil {
-		log.Fatalf("failed to mark address flag as required: %v", err)
+		log.Fatalf("failed to mark %s flag as required: %v", addressFlag, err)
 	}
 
-	err = deleteChatCmd.MarkFlagRequired("cert")
+	err = deleteChatCmd.MarkFlagRequired(certPathFlag)
 	if err != nil {
-		log.Fatalf("failed to mark cert flag as required: %v", err)
+		log.Fatalf("failed to mark %s flag as required: %v", certPathFlag, err)
 	}
 
-	err = connectChatCmd.MarkFlagRequired("id")
+	err = connectChatCmd.MarkFlagRequired(idFlag)
 	if err != nil {
-		log.Fatalf("failed to mark id flag as required: %v", err)
+		log.Fatalf("failed to mark %s flag as required: %v", idFlag, err)
 	}
 
-	err = connectChatCmd.MarkFlagRequired("address")
+	err = connectChatCmd.MarkFlagRequired(addressFlag)
 	if err != nil {
-		log.Fatalf("failed to mark address flag as required: %v", err)
+		log.Fatalf("failed to mark %s flag as required: %v", addressFlag, err)
 	}
 
-	err = connectChatCmd.MarkFlagRequired("cert")
+	err = connectChatCmd.MarkFlagRequired(certPathFlag)
 	if err != nil {
-		log.Fatalf("failed to mark cert flag as required: %v", err)
+		log.Fatalf("failed to mark %s flag as required: %v", certPathFlag, err)
 	}
 }

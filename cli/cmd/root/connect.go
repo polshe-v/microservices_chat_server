@@ -40,7 +40,7 @@ func connectChat(ctx context.Context, address string, certPath string, chatID st
 		return err
 	}
 
-	md := metadata.New(map[string]string{"Authorization": "Bearer " + accessToken})
+	md := metadata.New(map[string]string{"Authorization": tokenHeader + accessToken})
 	ctx = metadata.NewOutgoingContext(ctx, md)
 	stream, err := client.Connect(ctx, &desc.ConnectRequest{
 		ChatId:   chatID,
@@ -79,7 +79,7 @@ func connectChat(ctx context.Context, address string, certPath string, chatID st
 		}
 
 		// Input will be replaced with formatted message when received
-		fmt.Printf("\033[1A")
+		fmt.Print(lineUp)
 		_, err = client.SendMessage(ctx, &desc.SendMessageRequest{
 			ChatId: chatID,
 			Message: &desc.Message{
