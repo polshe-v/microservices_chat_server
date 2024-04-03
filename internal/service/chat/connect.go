@@ -2,7 +2,6 @@ package chat
 
 import (
 	"errors"
-	"fmt"
 	"log"
 
 	"github.com/polshe-v/microservices_chat_server/internal/converter"
@@ -33,7 +32,8 @@ func (s *serv) Connect(chatID string, username string, stream model.Stream) erro
 	s.chats[chatID].m.Unlock()
 
 	if err := s.loadHistory(chatID, stream); err != nil {
-		fmt.Println("failed to load history")
+		// If history not loaded, there's no problem, you can still send messages
+		log.Printf("failed to load history: %v", err)
 	}
 
 	for {
@@ -63,13 +63,11 @@ func (s *serv) Connect(chatID string, username string, stream model.Stream) erro
 func (s *serv) loadHistory(chatID string, stream model.Stream) error {
 	messages, err := s.messagesRepository.GetMessages(stream.Context(), chatID)
 	if err != nil {
-		log.Printf("GetMessages failed: %v", err)
 		return err
 	}
 
 	for _, msg := range messages {
 		if err := stream.Send(converter.ToMessageFromService(msg)); err != nil {
-			log.Printf("Send failed on msg %v: %v", msg, err)
 			return err
 		}
 	}
