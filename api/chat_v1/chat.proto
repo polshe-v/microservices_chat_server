@@ -10,6 +10,7 @@ option go_package = "github.com/polshe-v/microservices_chat_server/pkg/chat_v1;c
 service ChatV1 {
 	rpc Create(CreateRequest) returns (CreateResponse); 
 	rpc Delete(DeleteRequest) returns (google.protobuf.Empty);
+	rpc Connect(ConnectRequest) returns (stream Message);
 	rpc SendMessage(SendMessageRequest) returns (google.protobuf.Empty);
 }
 
@@ -28,13 +29,19 @@ message CreateRequest {
 }
 
 message CreateResponse {
-	int64 id = 1;
+	string id = 1;
 }
 
 message DeleteRequest {
-	int64 id = 1;
+	string id = 1;
 }
 
 message SendMessageRequest {
-	Message message = 1;
+	string chat_id = 1;
+	Message message = 2;
+}
+
+message ConnectRequest {
+	string chat_id = 1;
+	string username = 2;
 }

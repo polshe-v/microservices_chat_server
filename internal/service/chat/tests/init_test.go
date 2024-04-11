@@ -6,10 +6,8 @@ import (
 	"testing"
 
 	"github.com/gojuno/minimock/v3"
-	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/require"
 
-	"github.com/polshe-v/microservices_chat_server/internal/model"
 	"github.com/polshe-v/microservices_chat_server/internal/repository"
 	repositoryMocks "github.com/polshe-v/microservices_chat_server/internal/repository/mocks"
 	chatService "github.com/polshe-v/microservices_chat_server/internal/service/chat"
@@ -18,7 +16,7 @@ import (
 	"github.com/polshe-v/microservices_common/pkg/db/transaction"
 )
 
-func TestCreate(t *testing.T) {
+func TestInitChannels(t *testing.T) {
 	t.Parallel()
 
 	type chatRepositoryMockFunc func(mc *minimock.Controller) repository.ChatRepository
@@ -28,33 +26,19 @@ func TestCreate(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		req *model.Chat
 	}
 
 	var (
 		ctx = context.Background()
 		mc  = minimock.NewController(t)
 
-		id        = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-		usernames = []string{"name1", "name2", "name3"}
-
-		repositoryErr = fmt.Errorf("failed to create chat")
-
-		opts = pgx.TxOptions{IsoLevel: pgx.ReadCommitted}
-
-		req = &model.Chat{
-			Usernames: usernames,
-		}
-
-		reqLog = &model.Log{
-			Text: fmt.Sprintf("Created chat with id: %v", id),
-		}
+		repositoryErr = fmt.Errorf("failed to init existing chats")
+		ids           = []string{"xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx", "yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy"}
 	)
 
 	tests := []struct {
 		name                   string
 		args                   args
-		want                   string
 		err                    error
 		chatRepositoryMock     chatRepositoryMockFunc
 		messagesRepositoryMock messagesRepositoryMockFunc
@@ -65,13 +49,11 @@ func TestCreate(t *testing.T) {
 			name: "success case",
 			args: args{
 				ctx: ctx,
-				req: req,
 			},
-			want: id,
-			err:  nil,
+			err: nil,
 			chatRepositoryMock: func(mc *minimock.Controller) repository.ChatRepository {
 				mock := repositoryMocks.NewChatRepositoryMock(mc)
-				mock.CreateMock.Expect(minimock.AnyContext, req).Return(id, nil)
+				mock.GetChatsMock.Expect(minimock.AnyContext).Return(ids, nil)
 				return mock
 			},
 			messagesRepositoryMock: func(mc *minimock.Controller) repository.MessagesRepository {
@@ -80,14 +62,10 @@ func TestCreate(t *testing.T) {
 			},
 			logRepositoryMock: func(mc *minimock.Controller) repository.LogRepository {
 				mock := repositoryMocks.NewLogRepositoryMock(mc)
-				mock.LogMock.Expect(minimock.AnyContext, reqLog).Return(nil)
 				return mock
 			},
 			transactorMock: func(mc *minimock.Controller) db.Transactor {
 				mock := dbMocks.NewTransactorMock(mc)
-				txMock := dbMocks.NewTxMock(mc)
-				mock.BeginTxMock.Expect(minimock.AnyContext, opts).Return(txMock, nil)
-				txMock.CommitMock.Expect(minimock.AnyContext).Return(nil)
 				return mock
 			},
 		},
@@ -95,13 +73,11 @@ func TestCreate(t *testing.T) {
 			name: "chat repository error case",
 			args: args{
 				ctx: ctx,
-				req: req,
 			},
-			want: "",
-			err:  repositoryErr,
+			err: repositoryErr,
 			chatRepositoryMock: func(mc *minimock.Controller) repository.ChatRepository {
 				mock := repositoryMocks.NewChatRepositoryMock(mc)
-				mock.CreateMock.Expect(minimock.AnyContext, req).Return("", repositoryErr)
+				mock.GetChatsMock.Expect(minimock.AnyContext).Return(nil, repositoryErr)
 				return mock
 			},
 			messagesRepositoryMock: func(mc *minimock.Controller) repository.MessagesRepository {
@@ -114,39 +90,6 @@ func TestCreate(t *testing.T) {
 			},
 			transactorMock: func(mc *minimock.Controller) db.Transactor {
 				mock := dbMocks.NewTransactorMock(mc)
-				txMock := dbMocks.NewTxMock(mc)
-				mock.BeginTxMock.Expect(minimock.AnyContext, opts).Return(txMock, nil)
-				txMock.RollbackMock.Expect(minimock.AnyContext).Return(nil)
-				return mock
-			},
-		},
-		{
-			name: "log repository error case",
-			args: args{
-				ctx: ctx,
-				req: req,
-			},
-			want: "",
-			err:  repositoryErr,
-			chatRepositoryMock: func(mc *minimock.Controller) repository.ChatRepository {
-				mock := repositoryMocks.NewChatRepositoryMock(mc)
-				mock.CreateMock.Expect(minimock.AnyContext, req).Return(id, nil)
-				return mock
-			},
-			messagesRepositoryMock: func(mc *minimock.Controller) repository.MessagesRepository {
-				mock := repositoryMocks.NewMessagesRepositoryMock(mc)
-				return mock
-			},
-			logRepositoryMock: func(mc *minimock.Controller) repository.LogRepository {
-				mock := repositoryMocks.NewLogRepositoryMock(mc)
-				mock.LogMock.Expect(minimock.AnyContext, reqLog).Return(repositoryErr)
-				return mock
-			},
-			transactorMock: func(mc *minimock.Controller) db.Transactor {
-				mock := dbMocks.NewTransactorMock(mc)
-				txMock := dbMocks.NewTxMock(mc)
-				mock.BeginTxMock.Expect(minimock.AnyContext, opts).Return(txMock, nil)
-				txMock.RollbackMock.Expect(minimock.AnyContext).Return(nil)
 				return mock
 			},
 		},
@@ -163,9 +106,8 @@ func TestCreate(t *testing.T) {
 			txManagerMock := transaction.NewTransactionManager(tt.transactorMock(mc))
 			srv := chatService.NewService(chatRepositoryMock, messagesRepositoryMock, logRepositoryMock, txManagerMock)
 
-			res, err := srv.Create(tt.args.ctx, tt.args.req)
+			err := srv.InitChannels(tt.args.ctx)
 			require.Equal(t, tt.err, err)
-			require.Equal(t, tt.want, res)
 		})
 	}
 }

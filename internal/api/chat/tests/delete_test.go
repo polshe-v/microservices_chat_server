@@ -29,7 +29,7 @@ func TestDelete(t *testing.T) {
 		ctx = context.Background()
 		mc  = minimock.NewController(t)
 
-		id = int64(1)
+		id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 
 		serviceErr = fmt.Errorf("service error")
 

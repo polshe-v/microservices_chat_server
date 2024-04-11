@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	sq "github.com/Masterminds/squirrel"
+	"github.com/google/uuid"
 
 	"github.com/polshe-v/microservices_chat_server/internal/model"
 	"github.com/polshe-v/microservices_chat_server/internal/repository"
@@ -27,7 +28,7 @@ func NewRepository(db db.Client) repository.ChatRepository {
 	return &repo{db: db}
 }
 
-func (r *repo) Create(ctx context.Context, chat *model.Chat) (int64, error) {
+func (r *repo) Create(ctx context.Context, chat *model.Chat) (string, error) {
 	builderInsert := sq.Insert(tableName).
 		PlaceholderFormat(sq.Dollar).
 		Columns(usernamesColumn).
@@ -36,7 +37,7 @@ func (r *repo) Create(ctx context.Context, chat *model.Chat) (int64, error) {
 
 	query, args, err := builderInsert.ToSql()
 	if err != nil {
-		return 0, err
+		return "", err
 	}
 
 	q := db.Query{
@@ -44,19 +45,24 @@ func (r *repo) Create(ctx context.Context, chat *model.Chat) (int64, error) {
 		QueryRaw: query,
 	}
 
-	var id int64
+	var id uuid.UUID
 	err = r.db.DB().QueryRowContext(ctx, q, args...).Scan(&id)
 	if err != nil {
-		return 0, err
+		return "", err
 	}
 
-	return id, nil
+	return id.String(), nil
 }
 
-func (r *repo) Delete(ctx context.Context, id int64) error {
+func (r *repo) Delete(ctx context.Context, id string) error {
+	i, err := uuid.Parse(id)
+	if err != nil {
+		return err
+	}
+
 	builderDelete := sq.Delete(tableName).
 		PlaceholderFormat(sq.Dollar).
-		Where(sq.Eq{idColumn: id})
+		Where(sq.Eq{idColumn: i})
 
 	query, args, err := builderDelete.ToSql()
 	if err != nil {
@@ -73,4 +79,28 @@ func (r *repo) Delete(ctx context.Context, id int64) error {
 		return err
 	}
 	return nil
+}
+
+func (r *repo) GetChats(ctx context.Context) ([]string, error) {
+	builderSelect := sq.Select(idColumn).
+		From(tableName).
+		PlaceholderFormat(sq.Dollar)
+
+	query, args, err := builderSelect.ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	q := db.Query{
+		Name:     "chat_repository.GetChats",
+		QueryRaw: query,
+	}
+
+	var uuids uuid.UUIDs
+	err = r.db.DB().ScanAllContext(ctx, &uuids, q, args...)
+	if err != nil {
+		return nil, err
+	}
+
+	return uuids.Strings(), nil
 }

@@ -17,17 +17,35 @@ type ChatServiceMock struct {
 	t          minimock.Tester
 	finishOnce sync.Once
 
-	funcCreate          func(ctx context.Context, chat *model.Chat) (i1 int64, err error)
+	funcConnect          func(chatID string, username string, stream model.Stream) (err error)
+	inspectFuncConnect   func(chatID string, username string, stream model.Stream)
+	afterConnectCounter  uint64
+	beforeConnectCounter uint64
+	ConnectMock          mChatServiceMockConnect
+
+	funcCreate          func(ctx context.Context, chat *model.Chat) (s1 string, err error)
 	inspectFuncCreate   func(ctx context.Context, chat *model.Chat)
 	afterCreateCounter  uint64
 	beforeCreateCounter uint64
 	CreateMock          mChatServiceMockCreate
 
-	funcDelete          func(ctx context.Context, id int64) (err error)
-	inspectFuncDelete   func(ctx context.Context, id int64)
+	funcDelete          func(ctx context.Context, id string) (err error)
+	inspectFuncDelete   func(ctx context.Context, id string)
 	afterDeleteCounter  uint64
 	beforeDeleteCounter uint64
 	DeleteMock          mChatServiceMockDelete
+
+	funcInitChannels          func(ctx context.Context) (err error)
+	inspectFuncInitChannels   func(ctx context.Context)
+	afterInitChannelsCounter  uint64
+	beforeInitChannelsCounter uint64
+	InitChannelsMock          mChatServiceMockInitChannels
+
+	funcSendMessage          func(ctx context.Context, chatID string, message *model.Message) (err error)
+	inspectFuncSendMessage   func(ctx context.Context, chatID string, message *model.Message)
+	afterSendMessageCounter  uint64
+	beforeSendMessageCounter uint64
+	SendMessageMock          mChatServiceMockSendMessage
 }
 
 // NewChatServiceMock returns a mock for service.ChatService
@@ -38,15 +56,241 @@ func NewChatServiceMock(t minimock.Tester) *ChatServiceMock {
 		controller.RegisterMocker(m)
 	}
 
+	m.ConnectMock = mChatServiceMockConnect{mock: m}
+	m.ConnectMock.callArgs = []*ChatServiceMockConnectParams{}
+
 	m.CreateMock = mChatServiceMockCreate{mock: m}
 	m.CreateMock.callArgs = []*ChatServiceMockCreateParams{}
 
 	m.DeleteMock = mChatServiceMockDelete{mock: m}
 	m.DeleteMock.callArgs = []*ChatServiceMockDeleteParams{}
 
+	m.InitChannelsMock = mChatServiceMockInitChannels{mock: m}
+	m.InitChannelsMock.callArgs = []*ChatServiceMockInitChannelsParams{}
+
+	m.SendMessageMock = mChatServiceMockSendMessage{mock: m}
+	m.SendMessageMock.callArgs = []*ChatServiceMockSendMessageParams{}
+
 	t.Cleanup(m.MinimockFinish)
 
 	return m
+}
+
+type mChatServiceMockConnect struct {
+	mock               *ChatServiceMock
+	defaultExpectation *ChatServiceMockConnectExpectation
+	expectations       []*ChatServiceMockConnectExpectation
+
+	callArgs []*ChatServiceMockConnectParams
+	mutex    sync.RWMutex
+}
+
+// ChatServiceMockConnectExpectation specifies expectation struct of the ChatService.Connect
+type ChatServiceMockConnectExpectation struct {
+	mock    *ChatServiceMock
+	params  *ChatServiceMockConnectParams
+	results *ChatServiceMockConnectResults
+	Counter uint64
+}
+
+// ChatServiceMockConnectParams contains parameters of the ChatService.Connect
+type ChatServiceMockConnectParams struct {
+	chatID   string
+	username string
+	stream   model.Stream
+}
+
+// ChatServiceMockConnectResults contains results of the ChatService.Connect
+type ChatServiceMockConnectResults struct {
+	err error
+}
+
+// Expect sets up expected params for ChatService.Connect
+func (mmConnect *mChatServiceMockConnect) Expect(chatID string, username string, stream model.Stream) *mChatServiceMockConnect {
+	if mmConnect.mock.funcConnect != nil {
+		mmConnect.mock.t.Fatalf("ChatServiceMock.Connect mock is already set by Set")
+	}
+
+	if mmConnect.defaultExpectation == nil {
+		mmConnect.defaultExpectation = &ChatServiceMockConnectExpectation{}
+	}
+
+	mmConnect.defaultExpectation.params = &ChatServiceMockConnectParams{chatID, username, stream}
+	for _, e := range mmConnect.expectations {
+		if minimock.Equal(e.params, mmConnect.defaultExpectation.params) {
+			mmConnect.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmConnect.defaultExpectation.params)
+		}
+	}
+
+	return mmConnect
+}
+
+// Inspect accepts an inspector function that has same arguments as the ChatService.Connect
+func (mmConnect *mChatServiceMockConnect) Inspect(f func(chatID string, username string, stream model.Stream)) *mChatServiceMockConnect {
+	if mmConnect.mock.inspectFuncConnect != nil {
+		mmConnect.mock.t.Fatalf("Inspect function is already set for ChatServiceMock.Connect")
+	}
+
+	mmConnect.mock.inspectFuncConnect = f
+
+	return mmConnect
+}
+
+// Return sets up results that will be returned by ChatService.Connect
+func (mmConnect *mChatServiceMockConnect) Return(err error) *ChatServiceMock {
+	if mmConnect.mock.funcConnect != nil {
+		mmConnect.mock.t.Fatalf("ChatServiceMock.Connect mock is already set by Set")
+	}
+
+	if mmConnect.defaultExpectation == nil {
+		mmConnect.defaultExpectation = &ChatServiceMockConnectExpectation{mock: mmConnect.mock}
+	}
+	mmConnect.defaultExpectation.results = &ChatServiceMockConnectResults{err}
+	return mmConnect.mock
+}
+
+// Set uses given function f to mock the ChatService.Connect method
+func (mmConnect *mChatServiceMockConnect) Set(f func(chatID string, username string, stream model.Stream) (err error)) *ChatServiceMock {
+	if mmConnect.defaultExpectation != nil {
+		mmConnect.mock.t.Fatalf("Default expectation is already set for the ChatService.Connect method")
+	}
+
+	if len(mmConnect.expectations) > 0 {
+		mmConnect.mock.t.Fatalf("Some expectations are already set for the ChatService.Connect method")
+	}
+
+	mmConnect.mock.funcConnect = f
+	return mmConnect.mock
+}
+
+// When sets expectation for the ChatService.Connect which will trigger the result defined by the following
+// Then helper
+func (mmConnect *mChatServiceMockConnect) When(chatID string, username string, stream model.Stream) *ChatServiceMockConnectExpectation {
+	if mmConnect.mock.funcConnect != nil {
+		mmConnect.mock.t.Fatalf("ChatServiceMock.Connect mock is already set by Set")
+	}
+
+	expectation := &ChatServiceMockConnectExpectation{
+		mock:   mmConnect.mock,
+		params: &ChatServiceMockConnectParams{chatID, username, stream},
+	}
+	mmConnect.expectations = append(mmConnect.expectations, expectation)
+	return expectation
+}
+
+// Then sets up ChatService.Connect return parameters for the expectation previously defined by the When method
+func (e *ChatServiceMockConnectExpectation) Then(err error) *ChatServiceMock {
+	e.results = &ChatServiceMockConnectResults{err}
+	return e.mock
+}
+
+// Connect implements service.ChatService
+func (mmConnect *ChatServiceMock) Connect(chatID string, username string, stream model.Stream) (err error) {
+	mm_atomic.AddUint64(&mmConnect.beforeConnectCounter, 1)
+	defer mm_atomic.AddUint64(&mmConnect.afterConnectCounter, 1)
+
+	if mmConnect.inspectFuncConnect != nil {
+		mmConnect.inspectFuncConnect(chatID, username, stream)
+	}
+
+	mm_params := ChatServiceMockConnectParams{chatID, username, stream}
+
+	// Record call args
+	mmConnect.ConnectMock.mutex.Lock()
+	mmConnect.ConnectMock.callArgs = append(mmConnect.ConnectMock.callArgs, &mm_params)
+	mmConnect.ConnectMock.mutex.Unlock()
+
+	for _, e := range mmConnect.ConnectMock.expectations {
+		if minimock.Equal(*e.params, mm_params) {
+			mm_atomic.AddUint64(&e.Counter, 1)
+			return e.results.err
+		}
+	}
+
+	if mmConnect.ConnectMock.defaultExpectation != nil {
+		mm_atomic.AddUint64(&mmConnect.ConnectMock.defaultExpectation.Counter, 1)
+		mm_want := mmConnect.ConnectMock.defaultExpectation.params
+		mm_got := ChatServiceMockConnectParams{chatID, username, stream}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmConnect.t.Errorf("ChatServiceMock.Connect got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+		}
+
+		mm_results := mmConnect.ConnectMock.defaultExpectation.results
+		if mm_results == nil {
+			mmConnect.t.Fatal("No results are set for the ChatServiceMock.Connect")
+		}
+		return (*mm_results).err
+	}
+	if mmConnect.funcConnect != nil {
+		return mmConnect.funcConnect(chatID, username, stream)
+	}
+	mmConnect.t.Fatalf("Unexpected call to ChatServiceMock.Connect. %v %v %v", chatID, username, stream)
+	return
+}
+
+// ConnectAfterCounter returns a count of finished ChatServiceMock.Connect invocations
+func (mmConnect *ChatServiceMock) ConnectAfterCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmConnect.afterConnectCounter)
+}
+
+// ConnectBeforeCounter returns a count of ChatServiceMock.Connect invocations
+func (mmConnect *ChatServiceMock) ConnectBeforeCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmConnect.beforeConnectCounter)
+}
+
+// Calls returns a list of arguments used in each call to ChatServiceMock.Connect.
+// The list is in the same order as the calls were made (i.e. recent calls have a higher index)
+func (mmConnect *mChatServiceMockConnect) Calls() []*ChatServiceMockConnectParams {
+	mmConnect.mutex.RLock()
+
+	argCopy := make([]*ChatServiceMockConnectParams, len(mmConnect.callArgs))
+	copy(argCopy, mmConnect.callArgs)
+
+	mmConnect.mutex.RUnlock()
+
+	return argCopy
+}
+
+// MinimockConnectDone returns true if the count of the Connect invocations corresponds
+// the number of defined expectations
+func (m *ChatServiceMock) MinimockConnectDone() bool {
+	for _, e := range m.ConnectMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			return false
+		}
+	}
+
+	// if default expectation was set then invocations count should be greater than zero
+	if m.ConnectMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterConnectCounter) < 1 {
+		return false
+	}
+	// if func was set then invocations count should be greater than zero
+	if m.funcConnect != nil && mm_atomic.LoadUint64(&m.afterConnectCounter) < 1 {
+		return false
+	}
+	return true
+}
+
+// MinimockConnectInspect logs each unmet expectation
+func (m *ChatServiceMock) MinimockConnectInspect() {
+	for _, e := range m.ConnectMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			m.t.Errorf("Expected call to ChatServiceMock.Connect with params: %#v", *e.params)
+		}
+	}
+
+	// if default expectation was set then invocations count should be greater than zero
+	if m.ConnectMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterConnectCounter) < 1 {
+		if m.ConnectMock.defaultExpectation.params == nil {
+			m.t.Error("Expected call to ChatServiceMock.Connect")
+		} else {
+			m.t.Errorf("Expected call to ChatServiceMock.Connect with params: %#v", *m.ConnectMock.defaultExpectation.params)
+		}
+	}
+	// if func was set then invocations count should be greater than zero
+	if m.funcConnect != nil && mm_atomic.LoadUint64(&m.afterConnectCounter) < 1 {
+		m.t.Error("Expected call to ChatServiceMock.Connect")
+	}
 }
 
 type mChatServiceMockCreate struct {
@@ -74,7 +318,7 @@ type ChatServiceMockCreateParams struct {
 
 // ChatServiceMockCreateResults contains results of the ChatService.Create
 type ChatServiceMockCreateResults struct {
-	i1  int64
+	s1  string
 	err error
 }
 
@@ -110,7 +354,7 @@ func (mmCreate *mChatServiceMockCreate) Inspect(f func(ctx context.Context, chat
 }
 
 // Return sets up results that will be returned by ChatService.Create
-func (mmCreate *mChatServiceMockCreate) Return(i1 int64, err error) *ChatServiceMock {
+func (mmCreate *mChatServiceMockCreate) Return(s1 string, err error) *ChatServiceMock {
 	if mmCreate.mock.funcCreate != nil {
 		mmCreate.mock.t.Fatalf("ChatServiceMock.Create mock is already set by Set")
 	}
@@ -118,12 +362,12 @@ func (mmCreate *mChatServiceMockCreate) Return(i1 int64, err error) *ChatService
 	if mmCreate.defaultExpectation == nil {
 		mmCreate.defaultExpectation = &ChatServiceMockCreateExpectation{mock: mmCreate.mock}
 	}
-	mmCreate.defaultExpectation.results = &ChatServiceMockCreateResults{i1, err}
+	mmCreate.defaultExpectation.results = &ChatServiceMockCreateResults{s1, err}
 	return mmCreate.mock
 }
 
 // Set uses given function f to mock the ChatService.Create method
-func (mmCreate *mChatServiceMockCreate) Set(f func(ctx context.Context, chat *model.Chat) (i1 int64, err error)) *ChatServiceMock {
+func (mmCreate *mChatServiceMockCreate) Set(f func(ctx context.Context, chat *model.Chat) (s1 string, err error)) *ChatServiceMock {
 	if mmCreate.defaultExpectation != nil {
 		mmCreate.mock.t.Fatalf("Default expectation is already set for the ChatService.Create method")
 	}
@@ -152,13 +396,13 @@ func (mmCreate *mChatServiceMockCreate) When(ctx context.Context, chat *model.Ch
 }
 
 // Then sets up ChatService.Create return parameters for the expectation previously defined by the When method
-func (e *ChatServiceMockCreateExpectation) Then(i1 int64, err error) *ChatServiceMock {
-	e.results = &ChatServiceMockCreateResults{i1, err}
+func (e *ChatServiceMockCreateExpectation) Then(s1 string, err error) *ChatServiceMock {
+	e.results = &ChatServiceMockCreateResults{s1, err}
 	return e.mock
 }
 
 // Create implements service.ChatService
-func (mmCreate *ChatServiceMock) Create(ctx context.Context, chat *model.Chat) (i1 int64, err error) {
+func (mmCreate *ChatServiceMock) Create(ctx context.Context, chat *model.Chat) (s1 string, err error) {
 	mm_atomic.AddUint64(&mmCreate.beforeCreateCounter, 1)
 	defer mm_atomic.AddUint64(&mmCreate.afterCreateCounter, 1)
 
@@ -176,7 +420,7 @@ func (mmCreate *ChatServiceMock) Create(ctx context.Context, chat *model.Chat) (
 	for _, e := range mmCreate.CreateMock.expectations {
 		if minimock.Equal(*e.params, mm_params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
-			return e.results.i1, e.results.err
+			return e.results.s1, e.results.err
 		}
 	}
 
@@ -192,7 +436,7 @@ func (mmCreate *ChatServiceMock) Create(ctx context.Context, chat *model.Chat) (
 		if mm_results == nil {
 			mmCreate.t.Fatal("No results are set for the ChatServiceMock.Create")
 		}
-		return (*mm_results).i1, (*mm_results).err
+		return (*mm_results).s1, (*mm_results).err
 	}
 	if mmCreate.funcCreate != nil {
 		return mmCreate.funcCreate(ctx, chat)
@@ -286,7 +530,7 @@ type ChatServiceMockDeleteExpectation struct {
 // ChatServiceMockDeleteParams contains parameters of the ChatService.Delete
 type ChatServiceMockDeleteParams struct {
 	ctx context.Context
-	id  int64
+	id  string
 }
 
 // ChatServiceMockDeleteResults contains results of the ChatService.Delete
@@ -295,7 +539,7 @@ type ChatServiceMockDeleteResults struct {
 }
 
 // Expect sets up expected params for ChatService.Delete
-func (mmDelete *mChatServiceMockDelete) Expect(ctx context.Context, id int64) *mChatServiceMockDelete {
+func (mmDelete *mChatServiceMockDelete) Expect(ctx context.Context, id string) *mChatServiceMockDelete {
 	if mmDelete.mock.funcDelete != nil {
 		mmDelete.mock.t.Fatalf("ChatServiceMock.Delete mock is already set by Set")
 	}
@@ -315,7 +559,7 @@ func (mmDelete *mChatServiceMockDelete) Expect(ctx context.Context, id int64) *m
 }
 
 // Inspect accepts an inspector function that has same arguments as the ChatService.Delete
-func (mmDelete *mChatServiceMockDelete) Inspect(f func(ctx context.Context, id int64)) *mChatServiceMockDelete {
+func (mmDelete *mChatServiceMockDelete) Inspect(f func(ctx context.Context, id string)) *mChatServiceMockDelete {
 	if mmDelete.mock.inspectFuncDelete != nil {
 		mmDelete.mock.t.Fatalf("Inspect function is already set for ChatServiceMock.Delete")
 	}
@@ -339,7 +583,7 @@ func (mmDelete *mChatServiceMockDelete) Return(err error) *ChatServiceMock {
 }
 
 // Set uses given function f to mock the ChatService.Delete method
-func (mmDelete *mChatServiceMockDelete) Set(f func(ctx context.Context, id int64) (err error)) *ChatServiceMock {
+func (mmDelete *mChatServiceMockDelete) Set(f func(ctx context.Context, id string) (err error)) *ChatServiceMock {
 	if mmDelete.defaultExpectation != nil {
 		mmDelete.mock.t.Fatalf("Default expectation is already set for the ChatService.Delete method")
 	}
@@ -354,7 +598,7 @@ func (mmDelete *mChatServiceMockDelete) Set(f func(ctx context.Context, id int64
 
 // When sets expectation for the ChatService.Delete which will trigger the result defined by the following
 // Then helper
-func (mmDelete *mChatServiceMockDelete) When(ctx context.Context, id int64) *ChatServiceMockDeleteExpectation {
+func (mmDelete *mChatServiceMockDelete) When(ctx context.Context, id string) *ChatServiceMockDeleteExpectation {
 	if mmDelete.mock.funcDelete != nil {
 		mmDelete.mock.t.Fatalf("ChatServiceMock.Delete mock is already set by Set")
 	}
@@ -374,7 +618,7 @@ func (e *ChatServiceMockDeleteExpectation) Then(err error) *ChatServiceMock {
 }
 
 // Delete implements service.ChatService
-func (mmDelete *ChatServiceMock) Delete(ctx context.Context, id int64) (err error) {
+func (mmDelete *ChatServiceMock) Delete(ctx context.Context, id string) (err error) {
 	mm_atomic.AddUint64(&mmDelete.beforeDeleteCounter, 1)
 	defer mm_atomic.AddUint64(&mmDelete.afterDeleteCounter, 1)
 
@@ -482,13 +726,451 @@ func (m *ChatServiceMock) MinimockDeleteInspect() {
 	}
 }
 
+type mChatServiceMockInitChannels struct {
+	mock               *ChatServiceMock
+	defaultExpectation *ChatServiceMockInitChannelsExpectation
+	expectations       []*ChatServiceMockInitChannelsExpectation
+
+	callArgs []*ChatServiceMockInitChannelsParams
+	mutex    sync.RWMutex
+}
+
+// ChatServiceMockInitChannelsExpectation specifies expectation struct of the ChatService.InitChannels
+type ChatServiceMockInitChannelsExpectation struct {
+	mock    *ChatServiceMock
+	params  *ChatServiceMockInitChannelsParams
+	results *ChatServiceMockInitChannelsResults
+	Counter uint64
+}
+
+// ChatServiceMockInitChannelsParams contains parameters of the ChatService.InitChannels
+type ChatServiceMockInitChannelsParams struct {
+	ctx context.Context
+}
+
+// ChatServiceMockInitChannelsResults contains results of the ChatService.InitChannels
+type ChatServiceMockInitChannelsResults struct {
+	err error
+}
+
+// Expect sets up expected params for ChatService.InitChannels
+func (mmInitChannels *mChatServiceMockInitChannels) Expect(ctx context.Context) *mChatServiceMockInitChannels {
+	if mmInitChannels.mock.funcInitChannels != nil {
+		mmInitChannels.mock.t.Fatalf("ChatServiceMock.InitChannels mock is already set by Set")
+	}
+
+	if mmInitChannels.defaultExpectation == nil {
+		mmInitChannels.defaultExpectation = &ChatServiceMockInitChannelsExpectation{}
+	}
+
+	mmInitChannels.defaultExpectation.params = &ChatServiceMockInitChannelsParams{ctx}
+	for _, e := range mmInitChannels.expectations {
+		if minimock.Equal(e.params, mmInitChannels.defaultExpectation.params) {
+			mmInitChannels.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmInitChannels.defaultExpectation.params)
+		}
+	}
+
+	return mmInitChannels
+}
+
+// Inspect accepts an inspector function that has same arguments as the ChatService.InitChannels
+func (mmInitChannels *mChatServiceMockInitChannels) Inspect(f func(ctx context.Context)) *mChatServiceMockInitChannels {
+	if mmInitChannels.mock.inspectFuncInitChannels != nil {
+		mmInitChannels.mock.t.Fatalf("Inspect function is already set for ChatServiceMock.InitChannels")
+	}
+
+	mmInitChannels.mock.inspectFuncInitChannels = f
+
+	return mmInitChannels
+}
+
+// Return sets up results that will be returned by ChatService.InitChannels
+func (mmInitChannels *mChatServiceMockInitChannels) Return(err error) *ChatServiceMock {
+	if mmInitChannels.mock.funcInitChannels != nil {
+		mmInitChannels.mock.t.Fatalf("ChatServiceMock.InitChannels mock is already set by Set")
+	}
+
+	if mmInitChannels.defaultExpectation == nil {
+		mmInitChannels.defaultExpectation = &ChatServiceMockInitChannelsExpectation{mock: mmInitChannels.mock}
+	}
+	mmInitChannels.defaultExpectation.results = &ChatServiceMockInitChannelsResults{err}
+	return mmInitChannels.mock
+}
+
+// Set uses given function f to mock the ChatService.InitChannels method
+func (mmInitChannels *mChatServiceMockInitChannels) Set(f func(ctx context.Context) (err error)) *ChatServiceMock {
+	if mmInitChannels.defaultExpectation != nil {
+		mmInitChannels.mock.t.Fatalf("Default expectation is already set for the ChatService.InitChannels method")
+	}
+
+	if len(mmInitChannels.expectations) > 0 {
+		mmInitChannels.mock.t.Fatalf("Some expectations are already set for the ChatService.InitChannels method")
+	}
+
+	mmInitChannels.mock.funcInitChannels = f
+	return mmInitChannels.mock
+}
+
+// When sets expectation for the ChatService.InitChannels which will trigger the result defined by the following
+// Then helper
+func (mmInitChannels *mChatServiceMockInitChannels) When(ctx context.Context) *ChatServiceMockInitChannelsExpectation {
+	if mmInitChannels.mock.funcInitChannels != nil {
+		mmInitChannels.mock.t.Fatalf("ChatServiceMock.InitChannels mock is already set by Set")
+	}
+
+	expectation := &ChatServiceMockInitChannelsExpectation{
+		mock:   mmInitChannels.mock,
+		params: &ChatServiceMockInitChannelsParams{ctx},
+	}
+	mmInitChannels.expectations = append(mmInitChannels.expectations, expectation)
+	return expectation
+}
+
+// Then sets up ChatService.InitChannels return parameters for the expectation previously defined by the When method
+func (e *ChatServiceMockInitChannelsExpectation) Then(err error) *ChatServiceMock {
+	e.results = &ChatServiceMockInitChannelsResults{err}
+	return e.mock
+}
+
+// InitChannels implements service.ChatService
+func (mmInitChannels *ChatServiceMock) InitChannels(ctx context.Context) (err error) {
+	mm_atomic.AddUint64(&mmInitChannels.beforeInitChannelsCounter, 1)
+	defer mm_atomic.AddUint64(&mmInitChannels.afterInitChannelsCounter, 1)
+
+	if mmInitChannels.inspectFuncInitChannels != nil {
+		mmInitChannels.inspectFuncInitChannels(ctx)
+	}
+
+	mm_params := ChatServiceMockInitChannelsParams{ctx}
+
+	// Record call args
+	mmInitChannels.InitChannelsMock.mutex.Lock()
+	mmInitChannels.InitChannelsMock.callArgs = append(mmInitChannels.InitChannelsMock.callArgs, &mm_params)
+	mmInitChannels.InitChannelsMock.mutex.Unlock()
+
+	for _, e := range mmInitChannels.InitChannelsMock.expectations {
+		if minimock.Equal(*e.params, mm_params) {
+			mm_atomic.AddUint64(&e.Counter, 1)
+			return e.results.err
+		}
+	}
+
+	if mmInitChannels.InitChannelsMock.defaultExpectation != nil {
+		mm_atomic.AddUint64(&mmInitChannels.InitChannelsMock.defaultExpectation.Counter, 1)
+		mm_want := mmInitChannels.InitChannelsMock.defaultExpectation.params
+		mm_got := ChatServiceMockInitChannelsParams{ctx}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmInitChannels.t.Errorf("ChatServiceMock.InitChannels got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+		}
+
+		mm_results := mmInitChannels.InitChannelsMock.defaultExpectation.results
+		if mm_results == nil {
+			mmInitChannels.t.Fatal("No results are set for the ChatServiceMock.InitChannels")
+		}
+		return (*mm_results).err
+	}
+	if mmInitChannels.funcInitChannels != nil {
+		return mmInitChannels.funcInitChannels(ctx)
+	}
+	mmInitChannels.t.Fatalf("Unexpected call to ChatServiceMock.InitChannels. %v", ctx)
+	return
+}
+
+// InitChannelsAfterCounter returns a count of finished ChatServiceMock.InitChannels invocations
+func (mmInitChannels *ChatServiceMock) InitChannelsAfterCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmInitChannels.afterInitChannelsCounter)
+}
+
+// InitChannelsBeforeCounter returns a count of ChatServiceMock.InitChannels invocations
+func (mmInitChannels *ChatServiceMock) InitChannelsBeforeCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmInitChannels.beforeInitChannelsCounter)
+}
+
+// Calls returns a list of arguments used in each call to ChatServiceMock.InitChannels.
+// The list is in the same order as the calls were made (i.e. recent calls have a higher index)
+func (mmInitChannels *mChatServiceMockInitChannels) Calls() []*ChatServiceMockInitChannelsParams {
+	mmInitChannels.mutex.RLock()
+
+	argCopy := make([]*ChatServiceMockInitChannelsParams, len(mmInitChannels.callArgs))
+	copy(argCopy, mmInitChannels.callArgs)
+
+	mmInitChannels.mutex.RUnlock()
+
+	return argCopy
+}
+
+// MinimockInitChannelsDone returns true if the count of the InitChannels invocations corresponds
+// the number of defined expectations
+func (m *ChatServiceMock) MinimockInitChannelsDone() bool {
+	for _, e := range m.InitChannelsMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			return false
+		}
+	}
+
+	// if default expectation was set then invocations count should be greater than zero
+	if m.InitChannelsMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterInitChannelsCounter) < 1 {
+		return false
+	}
+	// if func was set then invocations count should be greater than zero
+	if m.funcInitChannels != nil && mm_atomic.LoadUint64(&m.afterInitChannelsCounter) < 1 {
+		return false
+	}
+	return true
+}
+
+// MinimockInitChannelsInspect logs each unmet expectation
+func (m *ChatServiceMock) MinimockInitChannelsInspect() {
+	for _, e := range m.InitChannelsMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			m.t.Errorf("Expected call to ChatServiceMock.InitChannels with params: %#v", *e.params)
+		}
+	}
+
+	// if default expectation was set then invocations count should be greater than zero
+	if m.InitChannelsMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterInitChannelsCounter) < 1 {
+		if m.InitChannelsMock.defaultExpectation.params == nil {
+			m.t.Error("Expected call to ChatServiceMock.InitChannels")
+		} else {
+			m.t.Errorf("Expected call to ChatServiceMock.InitChannels with params: %#v", *m.InitChannelsMock.defaultExpectation.params)
+		}
+	}
+	// if func was set then invocations count should be greater than zero
+	if m.funcInitChannels != nil && mm_atomic.LoadUint64(&m.afterInitChannelsCounter) < 1 {
+		m.t.Error("Expected call to ChatServiceMock.InitChannels")
+	}
+}
+
+type mChatServiceMockSendMessage struct {
+	mock               *ChatServiceMock
+	defaultExpectation *ChatServiceMockSendMessageExpectation
+	expectations       []*ChatServiceMockSendMessageExpectation
+
+	callArgs []*ChatServiceMockSendMessageParams
+	mutex    sync.RWMutex
+}
+
+// ChatServiceMockSendMessageExpectation specifies expectation struct of the ChatService.SendMessage
+type ChatServiceMockSendMessageExpectation struct {
+	mock    *ChatServiceMock
+	params  *ChatServiceMockSendMessageParams
+	results *ChatServiceMockSendMessageResults
+	Counter uint64
+}
+
+// ChatServiceMockSendMessageParams contains parameters of the ChatService.SendMessage
+type ChatServiceMockSendMessageParams struct {
+	ctx     context.Context
+	chatID  string
+	message *model.Message
+}
+
+// ChatServiceMockSendMessageResults contains results of the ChatService.SendMessage
+type ChatServiceMockSendMessageResults struct {
+	err error
+}
+
+// Expect sets up expected params for ChatService.SendMessage
+func (mmSendMessage *mChatServiceMockSendMessage) Expect(ctx context.Context, chatID string, message *model.Message) *mChatServiceMockSendMessage {
+	if mmSendMessage.mock.funcSendMessage != nil {
+		mmSendMessage.mock.t.Fatalf("ChatServiceMock.SendMessage mock is already set by Set")
+	}
+
+	if mmSendMessage.defaultExpectation == nil {
+		mmSendMessage.defaultExpectation = &ChatServiceMockSendMessageExpectation{}
+	}
+
+	mmSendMessage.defaultExpectation.params = &ChatServiceMockSendMessageParams{ctx, chatID, message}
+	for _, e := range mmSendMessage.expectations {
+		if minimock.Equal(e.params, mmSendMessage.defaultExpectation.params) {
+			mmSendMessage.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmSendMessage.defaultExpectation.params)
+		}
+	}
+
+	return mmSendMessage
+}
+
+// Inspect accepts an inspector function that has same arguments as the ChatService.SendMessage
+func (mmSendMessage *mChatServiceMockSendMessage) Inspect(f func(ctx context.Context, chatID string, message *model.Message)) *mChatServiceMockSendMessage {
+	if mmSendMessage.mock.inspectFuncSendMessage != nil {
+		mmSendMessage.mock.t.Fatalf("Inspect function is already set for ChatServiceMock.SendMessage")
+	}
+
+	mmSendMessage.mock.inspectFuncSendMessage = f
+
+	return mmSendMessage
+}
+
+// Return sets up results that will be returned by ChatService.SendMessage
+func (mmSendMessage *mChatServiceMockSendMessage) Return(err error) *ChatServiceMock {
+	if mmSendMessage.mock.funcSendMessage != nil {
+		mmSendMessage.mock.t.Fatalf("ChatServiceMock.SendMessage mock is already set by Set")
+	}
+
+	if mmSendMessage.defaultExpectation == nil {
+		mmSendMessage.defaultExpectation = &ChatServiceMockSendMessageExpectation{mock: mmSendMessage.mock}
+	}
+	mmSendMessage.defaultExpectation.results = &ChatServiceMockSendMessageResults{err}
+	return mmSendMessage.mock
+}
+
+// Set uses given function f to mock the ChatService.SendMessage method
+func (mmSendMessage *mChatServiceMockSendMessage) Set(f func(ctx context.Context, chatID string, message *model.Message) (err error)) *ChatServiceMock {
+	if mmSendMessage.defaultExpectation != nil {
+		mmSendMessage.mock.t.Fatalf("Default expectation is already set for the ChatService.SendMessage method")
+	}
+
+	if len(mmSendMessage.expectations) > 0 {
+		mmSendMessage.mock.t.Fatalf("Some expectations are already set for the ChatService.SendMessage method")
+	}
+
+	mmSendMessage.mock.funcSendMessage = f
+	return mmSendMessage.mock
+}
+
+// When sets expectation for the ChatService.SendMessage which will trigger the result defined by the following
+// Then helper
+func (mmSendMessage *mChatServiceMockSendMessage) When(ctx context.Context, chatID string, message *model.Message) *ChatServiceMockSendMessageExpectation {
+	if mmSendMessage.mock.funcSendMessage != nil {
+		mmSendMessage.mock.t.Fatalf("ChatServiceMock.SendMessage mock is already set by Set")
+	}
+
+	expectation := &ChatServiceMockSendMessageExpectation{
+		mock:   mmSendMessage.mock,
+		params: &ChatServiceMockSendMessageParams{ctx, chatID, message},
+	}
+	mmSendMessage.expectations = append(mmSendMessage.expectations, expectation)
+	return expectation
+}
+
+// Then sets up ChatService.SendMessage return parameters for the expectation previously defined by the When method
+func (e *ChatServiceMockSendMessageExpectation) Then(err error) *ChatServiceMock {
+	e.results = &ChatServiceMockSendMessageResults{err}
+	return e.mock
+}
+
+// SendMessage implements service.ChatService
+func (mmSendMessage *ChatServiceMock) SendMessage(ctx context.Context, chatID string, message *model.Message) (err error) {
+	mm_atomic.AddUint64(&mmSendMessage.beforeSendMessageCounter, 1)
+	defer mm_atomic.AddUint64(&mmSendMessage.afterSendMessageCounter, 1)
+
+	if mmSendMessage.inspectFuncSendMessage != nil {
+		mmSendMessage.inspectFuncSendMessage(ctx, chatID, message)
+	}
+
+	mm_params := ChatServiceMockSendMessageParams{ctx, chatID, message}
+
+	// Record call args
+	mmSendMessage.SendMessageMock.mutex.Lock()
+	mmSendMessage.SendMessageMock.callArgs = append(mmSendMessage.SendMessageMock.callArgs, &mm_params)
+	mmSendMessage.SendMessageMock.mutex.Unlock()
+
+	for _, e := range mmSendMessage.SendMessageMock.expectations {
+		if minimock.Equal(*e.params, mm_params) {
+			mm_atomic.AddUint64(&e.Counter, 1)
+			return e.results.err
+		}
+	}
+
+	if mmSendMessage.SendMessageMock.defaultExpectation != nil {
+		mm_atomic.AddUint64(&mmSendMessage.SendMessageMock.defaultExpectation.Counter, 1)
+		mm_want := mmSendMessage.SendMessageMock.defaultExpectation.params
+		mm_got := ChatServiceMockSendMessageParams{ctx, chatID, message}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmSendMessage.t.Errorf("ChatServiceMock.SendMessage got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+		}
+
+		mm_results := mmSendMessage.SendMessageMock.defaultExpectation.results
+		if mm_results == nil {
+			mmSendMessage.t.Fatal("No results are set for the ChatServiceMock.SendMessage")
+		}
+		return (*mm_results).err
+	}
+	if mmSendMessage.funcSendMessage != nil {
+		return mmSendMessage.funcSendMessage(ctx, chatID, message)
+	}
+	mmSendMessage.t.Fatalf("Unexpected call to ChatServiceMock.SendMessage. %v %v %v", ctx, chatID, message)
+	return
+}
+
+// SendMessageAfterCounter returns a count of finished ChatServiceMock.SendMessage invocations
+func (mmSendMessage *ChatServiceMock) SendMessageAfterCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmSendMessage.afterSendMessageCounter)
+}
+
+// SendMessageBeforeCounter returns a count of ChatServiceMock.SendMessage invocations
+func (mmSendMessage *ChatServiceMock) SendMessageBeforeCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmSendMessage.beforeSendMessageCounter)
+}
+
+// Calls returns a list of arguments used in each call to ChatServiceMock.SendMessage.
+// The list is in the same order as the calls were made (i.e. recent calls have a higher index)
+func (mmSendMessage *mChatServiceMockSendMessage) Calls() []*ChatServiceMockSendMessageParams {
+	mmSendMessage.mutex.RLock()
+
+	argCopy := make([]*ChatServiceMockSendMessageParams, len(mmSendMessage.callArgs))
+	copy(argCopy, mmSendMessage.callArgs)
+
+	mmSendMessage.mutex.RUnlock()
+
+	return argCopy
+}
+
+// MinimockSendMessageDone returns true if the count of the SendMessage invocations corresponds
+// the number of defined expectations
+func (m *ChatServiceMock) MinimockSendMessageDone() bool {
+	for _, e := range m.SendMessageMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			return false
+		}
+	}
+
+	// if default expectation was set then invocations count should be greater than zero
+	if m.SendMessageMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterSendMessageCounter) < 1 {
+		return false
+	}
+	// if func was set then invocations count should be greater than zero
+	if m.funcSendMessage != nil && mm_atomic.LoadUint64(&m.afterSendMessageCounter) < 1 {
+		return false
+	}
+	return true
+}
+
+// MinimockSendMessageInspect logs each unmet expectation
+func (m *ChatServiceMock) MinimockSendMessageInspect() {
+	for _, e := range m.SendMessageMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			m.t.Errorf("Expected call to ChatServiceMock.SendMessage with params: %#v", *e.params)
+		}
+	}
+
+	// if default expectation was set then invocations count should be greater than zero
+	if m.SendMessageMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterSendMessageCounter) < 1 {
+		if m.SendMessageMock.defaultExpectation.params == nil {
+			m.t.Error("Expected call to ChatServiceMock.SendMessage")
+		} else {
+			m.t.Errorf("Expected call to ChatServiceMock.SendMessage with params: %#v", *m.SendMessageMock.defaultExpectation.params)
+		}
+	}
+	// if func was set then invocations count should be greater than zero
+	if m.funcSendMessage != nil && mm_atomic.LoadUint64(&m.afterSendMessageCounter) < 1 {
+		m.t.Error("Expected call to ChatServiceMock.SendMessage")
+	}
+}
+
 // MinimockFinish checks that all mocked methods have been called the expected number of times
 func (m *ChatServiceMock) MinimockFinish() {
 	m.finishOnce.Do(func() {
 		if !m.minimockDone() {
+			m.MinimockConnectInspect()
+
 			m.MinimockCreateInspect()
 
 			m.MinimockDeleteInspect()
+
+			m.MinimockInitChannelsInspect()
+
+			m.MinimockSendMessageInspect()
 			m.t.FailNow()
 		}
 	})
@@ -513,6 +1195,9 @@ func (m *ChatServiceMock) MinimockWait(timeout mm_time.Duration) {
 func (m *ChatServiceMock) minimockDone() bool {
 	done := true
 	return done &&
+		m.MinimockConnectDone() &&
 		m.MinimockCreateDone() &&
-		m.MinimockDeleteDone()
+		m.MinimockDeleteDone() &&
+		m.MinimockInitChannelsDone() &&
+		m.MinimockSendMessageDone()
 }

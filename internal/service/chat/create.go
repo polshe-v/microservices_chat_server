@@ -9,8 +9,8 @@ import (
 	"github.com/polshe-v/microservices_chat_server/internal/model"
 )
 
-func (s *serv) Create(ctx context.Context, chat *model.Chat) (int64, error) {
-	var id int64
+func (s *serv) Create(ctx context.Context, chat *model.Chat) (string, error) {
+	var id string
 
 	err := s.txManager.ReadCommitted(ctx, func(ctx context.Context) error {
 		var errTx error
@@ -20,7 +20,7 @@ func (s *serv) Create(ctx context.Context, chat *model.Chat) (int64, error) {
 		}
 
 		errTx = s.logRepository.Log(ctx, &model.Log{
-			Text: fmt.Sprintf("Created chat with id: %d", id),
+			Text: fmt.Sprintf("Created chat with id: %v", id),
 		})
 		if errTx != nil {
 			return errTx
@@ -31,8 +31,11 @@ func (s *serv) Create(ctx context.Context, chat *model.Chat) (int64, error) {
 
 	if err != nil {
 		log.Print(err)
-		return 0, errors.New("failed to create chat")
+		return "", errors.New("failed to create chat")
 	}
+
+	// Create buffered channel for new chat
+	s.channels[id] = make(chan *model.Message, messagesBuffer)
 
 	return id, nil
 }

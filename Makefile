@@ -4,6 +4,7 @@ endif
 
 LOCAL_BIN:=$(CURDIR)/bin
 BINARY_NAME=main
+CLI_BINARY_NAME=chat-client
 CONFIG=$(ENV).env
 LOCAL_MIGRATION_DIR=$(MIGRATION_DIR)
 LOCAL_MIGRATION_DSN="host=localhost port=$(POSTGRES_PORT_LOCAL) dbname=$(POSTGRES_DB) user=$(POSTGRES_USER) password=$(POSTGRES_PASSWORD) sslmode=disable"
@@ -76,6 +77,9 @@ test-coverage:
 # ##### #
 # BUILD #
 # ##### #
+
+build-chat-client:
+	GOOS=linux GOARCH=amd64 go build -o $(LOCAL_BIN)/${CLI_BINARY_NAME} cli/cmd/main.go
 
 build-app:
 	GOOS=linux GOARCH=amd64 go build -o $(LOCAL_BIN)/${BINARY_NAME} cmd/chat/main.go

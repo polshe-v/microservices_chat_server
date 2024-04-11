@@ -29,7 +29,7 @@ func TestCreate(t *testing.T) {
 		ctx = context.Background()
 		mc  = minimock.NewController(t)
 
-		id        = int64(1)
+		id        = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 		usernames = []string{"name1", "name2", "name3"}
 
 		serviceErr = fmt.Errorf("service error")
@@ -80,7 +80,7 @@ func TestCreate(t *testing.T) {
 			err:  serviceErr,
 			chatServiceMock: func(mc *minimock.Controller) service.ChatService {
 				mock := serviceMocks.NewChatServiceMock(mc)
-				mock.CreateMock.Expect(ctx, chat).Return(0, serviceErr)
+				mock.CreateMock.Expect(ctx, chat).Return("", serviceErr)
 				return mock
 			},
 		},

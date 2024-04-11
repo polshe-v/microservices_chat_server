@@ -6,10 +6,18 @@ import (
 	"github.com/polshe-v/microservices_chat_server/internal/model"
 )
 
-// ChatRepository is the interface for user info repository communication.
+// ChatRepository is the interface for chat info repository communication.
 type ChatRepository interface {
-	Create(ctx context.Context, chat *model.Chat) (int64, error)
-	Delete(ctx context.Context, id int64) error
+	Create(ctx context.Context, chat *model.Chat) (string, error)
+	Delete(ctx context.Context, id string) error
+	GetChats(ctx context.Context) ([]string, error)
+}
+
+// MessagesRepository is the interface for messages info repository communication.
+type MessagesRepository interface {
+	Create(ctx context.Context, chatID string, message *model.Message) error
+	GetMessages(ctx context.Context, chatID string) ([]*model.Message, error)
+	DeleteChat(ctx context.Context, chatID string) error
 }
 
 // LogRepository is the interface for transaction log repository communication.

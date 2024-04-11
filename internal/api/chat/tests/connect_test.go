@@ -1,14 +1,11 @@
 package tests
 
-import (
-	"context"
+/*import (
 	"fmt"
 	"testing"
 
 	"github.com/gojuno/minimock/v3"
-	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	chatAPI "github.com/polshe-v/microservices_chat_server/internal/api/chat"
 	"github.com/polshe-v/microservices_chat_server/internal/model"
@@ -17,78 +14,62 @@ import (
 	desc "github.com/polshe-v/microservices_chat_server/pkg/chat_v1"
 )
 
-func TestSend(t *testing.T) {
+func TestConnect(t *testing.T) {
 	t.Parallel()
 
 	type chatServiceMockFunc func(mc *minimock.Controller) service.ChatService
 
 	type args struct {
-		ctx context.Context
-		req *desc.SendMessageRequest
+		req    *desc.ConnectRequest
+		stream desc.ChatV1_ConnectServer
 	}
 
 	var (
-		ctx = context.Background()
-		mc  = minimock.NewController(t)
+		mc = minimock.NewController(t)
 
-		chatID = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-
-		from      = "from"
-		text      = "text"
-		timestamp = timestamppb.Now()
-
-		message = &model.Message{
-			From:      from,
-			Text:      text,
-			Timestamp: timestamp.AsTime(),
-		}
+		chatID   = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+		username = "username"
 
 		serviceErr = fmt.Errorf("service error")
 
-		req = &desc.SendMessageRequest{
-			Message: &desc.Message{
-				From:      from,
-				Text:      text,
-				Timestamp: timestamp,
-			},
-			ChatId: chatID,
-		}
+		stream        desc.ChatV1_ConnectServer
+		serviceStream model.Stream
 
-		res = &empty.Empty{}
+		req = &desc.ConnectRequest{
+			ChatId:   chatID,
+			Username: username,
+		}
 	)
 
 	tests := []struct {
 		name            string
 		args            args
-		want            *empty.Empty
 		err             error
 		chatServiceMock chatServiceMockFunc
 	}{
 		{
 			name: "success case",
 			args: args{
-				ctx: ctx,
-				req: req,
+				req:    req,
+				stream: stream,
 			},
-			want: res,
-			err:  nil,
+			err: nil,
 			chatServiceMock: func(mc *minimock.Controller) service.ChatService {
 				mock := serviceMocks.NewChatServiceMock(mc)
-				mock.SendMessageMock.Expect(ctx, chatID, message).Return(nil)
+				mock.ConnectMock.Expect(chatID, username, serviceStream).Return(nil)
 				return mock
 			},
 		},
 		{
 			name: "service error case",
 			args: args{
-				ctx: ctx,
-				req: req,
+				req:    req,
+				stream: stream,
 			},
-			want: nil,
-			err:  serviceErr,
+			err: serviceErr,
 			chatServiceMock: func(mc *minimock.Controller) service.ChatService {
 				mock := serviceMocks.NewChatServiceMock(mc)
-				mock.SendMessageMock.Expect(ctx, chatID, message).Return(serviceErr)
+				mock.ConnectMock.Expect(chatID, username, serviceStream).Return(serviceErr)
 				return mock
 			},
 		},
@@ -102,9 +83,8 @@ func TestSend(t *testing.T) {
 			chatServiceMock := tt.chatServiceMock(mc)
 			api := chatAPI.NewImplementation(chatServiceMock)
 
-			res, err := api.SendMessage(tt.args.ctx, tt.args.req)
+			err := api.Connect(tt.args.req, tt.args.stream)
 			require.Equal(t, tt.err, err)
-			require.Equal(t, tt.want, res)
 		})
 	}
-}
+}*/

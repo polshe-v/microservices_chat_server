@@ -1,4 +1,4 @@
-FROM golang:1.22.0-alpine3.19 AS builder
+FROM golang:1.22.1-alpine3.19 AS builder
 ARG ENV
 
 RUN apk update && apk upgrade --available && \
@@ -26,8 +26,8 @@ WORKDIR /opt/app/
 COPY --from=builder /opt/app/bin/main .
 COPY --from=builder /etc/passwd /etc/passwd
 COPY --from=builder /etc/group /etc/group
-COPY --from=builder /opt/app/${CONFIG} ./config
-COPY --from=builder /opt/app/tls/ ./tls/
+COPY --from=builder --chown=chat-server:chat-server /opt/app/${CONFIG} ./config
+COPY --from=builder --chown=chat-server:chat-server /opt/app/tls/ ./tls/
 
 USER chat-server:chat-server
 

@@ -28,3 +28,6 @@ coverage.*
 
 # Certificates and private keys
 /tls/
+
+# Access token for testing
+.access_token
