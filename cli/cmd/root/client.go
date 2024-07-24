@@ -15,7 +15,7 @@ func authClient(address string, certPath string) (descAuth.AuthV1Client, error) 
 		return nil, err
 	}
 
-	conn, err := grpc.Dial(address,
+	conn, err := grpc.NewClient(address,
 		grpc.WithTransportCredentials(creds),
 	)
 	if err != nil {
@@ -32,7 +32,7 @@ func chatServerClient(address string, certPath string) (descChat.ChatV1Client, e
 		return nil, err
 	}
 
-	conn, err := grpc.Dial(address,
+	conn, err := grpc.NewClient(address,
 		grpc.WithTransportCredentials(creds),
 	)
 	if err != nil {

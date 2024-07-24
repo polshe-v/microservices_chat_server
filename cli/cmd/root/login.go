@@ -22,7 +22,10 @@ func login(ctx context.Context, address string, certPath string) error {
 	var username string
 
 	fmt.Print(color.CyanString("Username: "))
-	fmt.Scan(&username)
+	_, err = fmt.Scan(&username)
+	if err != nil {
+		return err
+	}
 
 	fmt.Print(color.CyanString("Password (no echo): "))
 	password, err := term.ReadPassword(0)

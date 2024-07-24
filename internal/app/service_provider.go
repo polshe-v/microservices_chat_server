@@ -109,7 +109,7 @@ func (s *serviceProvider) AuthClient() rpc.AuthClient {
 			log.Fatalf("failed to get credentials of authentication service: %v", err)
 		}
 
-		conn, err := grpc.Dial(
+		conn, err := grpc.NewClient(
 			cfg.Address(),
 			grpc.WithTransportCredentials(creds),
 			grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
